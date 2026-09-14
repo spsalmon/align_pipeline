@@ -782,6 +782,95 @@ def test_local_pipeline_segmentation_and_morphology(tmp_path):
     assert all(float(r["ch1_seg_area"]) > 0 for r in rows)
 
 
+def test_find_existing_filemap_any_extension_newest_wins(tmp_path):
+    from towbintools_pipeline.init_pipeline import find_existing_filemap
+
+    assert find_existing_filemap(str(tmp_path), "analysis_filemap") is None
+
+    parquet_path = tmp_path / "analysis_filemap.parquet"
+    parquet_path.write_text("")
+    assert find_existing_filemap(str(tmp_path), "analysis_filemap") == str(parquet_path)
+
+    # With both extensions present, the most recent file is picked.
+    csv_path = tmp_path / "analysis_filemap.csv"
+    csv_path.write_text("")
+    os.utime(parquet_path, (1_000, 1_000))
+    os.utime(csv_path, (2_000, 2_000))
+    assert find_existing_filemap(str(tmp_path), "analysis_filemap") == str(csv_path)
+    os.utime(parquet_path, (3_000, 3_000))
+    assert find_existing_filemap(str(tmp_path), "analysis_filemap") == str(parquet_path)
+
+
+def _run_segmentation_as_parquet_then_full_as_csv(tmp_path, before_second_run=None):
+    # First run: segmentation only, parquet filemap. Second run: segmentation +
+    # morphology with report_format csv. Returns the report dir.
+    config_path = _build_experiment(
+        tmp_path,
+        extra_config={"report_format": "parquet", "building_blocks": ["segmentation"]},
+    )
+    result = _run_pipeline(config_path, ["--temp_dir", str(tmp_path / "t1")])
+    assert result.returncode == 0, f"pipeline failed:\n{result.stdout}\n{result.stderr}"
+
+    report_dir = tmp_path / "exp" / "analysis" / "report"
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+    config["report_format"] = "csv"
+    config["building_blocks"] = ["segmentation", "morphology_computation"]
+    if before_second_run is not None:
+        before_second_run(report_dir, config)
+    with open(config_path, "w") as f:
+        yaml.safe_dump(config, f)
+    result = _run_pipeline(config_path, ["--temp_dir", str(tmp_path / "t2")])
+    assert result.returncode == 0, f"pipeline failed:\n{result.stdout}\n{result.stderr}"
+    return report_dir
+
+
+def test_existing_filemap_in_other_format_is_converted(tmp_path):
+    # A parquet filemap from an earlier run is picked up by a csv run, which
+    # converts it and writes its results to the csv; the parquet is untouched.
+    import polars as pl
+
+    parquet_bytes = {}
+
+    def snapshot(report_dir, config):
+        parquet_bytes["base"] = (report_dir / "analysis_filemap.parquet").read_bytes()
+
+    report_dir = _run_segmentation_as_parquet_then_full_as_csv(tmp_path, snapshot)
+
+    assert (report_dir / "analysis_filemap.parquet").read_bytes() == parquet_bytes[
+        "base"
+    ]
+    csv_filemap = pl.read_csv(report_dir / "analysis_filemap.csv")
+    assert "analysis/ch1_seg" in csv_filemap.columns  # carried over from the parquet
+    assert "ch1_seg_area" in csv_filemap.columns  # added by this run
+
+
+def test_existing_annotated_filemap_in_other_format_is_converted(tmp_path):
+    # With overwrite_annotated_filemap, a parquet annotated filemap is converted
+    # to csv and the run's results land there; the parquet files are untouched.
+    import polars as pl
+
+    parquet_bytes = {}
+
+    def annotate(report_dir, config):
+        base = pl.read_parquet(report_dir / "analysis_filemap.parquet")
+        base.with_columns(pl.lit(7).alias("M1")).write_parquet(
+            report_dir / "analysis_filemap_annotated.parquet"
+        )
+        for name in ("analysis_filemap", "analysis_filemap_annotated"):
+            parquet_bytes[name] = (report_dir / f"{name}.parquet").read_bytes()
+        config["overwrite_annotated_filemap"] = True
+
+    report_dir = _run_segmentation_as_parquet_then_full_as_csv(tmp_path, annotate)
+
+    for name, content in parquet_bytes.items():
+        assert (report_dir / f"{name}.parquet").read_bytes() == content
+    annotated = pl.read_csv(report_dir / "analysis_filemap_annotated.csv")
+    assert "M1" in annotated.columns  # the annotation survived the conversion
+    assert "ch1_seg_area" in annotated.columns  # added by this run
+    assert not (report_dir / "analysis_filemap.csv").exists()
+
+
 def test_local_pipeline_default_temp_dir_in_cwd(tmp_path):
     # Without --temp_dir (and no temp_dir config key), temp files default to
     # ./temp_files in the working directory (matching the sbatch launcher).

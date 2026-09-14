@@ -51,6 +51,29 @@ def get_args(argv=None):
     return args
 
 
+SUPPORTED_FILEMAP_FORMATS = ("csv", "parquet")
+
+
+def _file_creation_time(path):
+    # st_birthtime is not exposed on Linux; fall back to the modification time.
+    stat = os.stat(path)
+    return getattr(stat, "st_birthtime", stat.st_mtime)
+
+
+def find_existing_filemap(report_subdir, filemap_name):
+    """Return the path of an existing `<filemap_name>.<ext>` in report_subdir for
+    any supported extension, or None. If several exist (e.g. both a .csv and a
+    .parquet), the most recently created one wins."""
+    candidates = [
+        os.path.join(report_subdir, f"{filemap_name}.{ext}")
+        for ext in SUPPORTED_FILEMAP_FORMATS
+    ]
+    candidates = [path for path in candidates if os.path.exists(path)]
+    if not candidates:
+        return None
+    return max(candidates, key=_file_creation_time)
+
+
 def build_or_load_filemap(config):
     """Build the base filemap from the raw dir (or load the existing one) and add
     ExperimentTime. Returns (experiment_filemap, filemap_path)."""
@@ -63,10 +86,9 @@ def build_or_load_filemap(config):
     extract_experiment_time = config.get("get_experiment_time", True)
     overwrite_annotated = config.get("overwrite_annotated_filemap", False)
 
-    # if the filemap does not exist, create it from the raw directory
-    if not os.path.exists(
-        os.path.join(report_subdir, f"analysis_filemap.{report_format}")
-    ):
+    # if no filemap exists (in any supported format), create it from the raw directory
+    base_filemap_path = find_existing_filemap(report_subdir, "analysis_filemap")
+    if base_filemap_path is None:
         try:
             experiment_filemap = get_dir_filemap(raw_subdir, time_regex, point_regex)
         except Exception as e:
@@ -82,22 +104,33 @@ def build_or_load_filemap(config):
             config["no_timepoints"] = True
 
         experiment_filemap = experiment_filemap.rename({"ImagePath": raw_dir_name})
-        filemap_path = os.path.join(report_subdir, f"analysis_filemap.{report_format}")
+        base_filemap_path = os.path.join(
+            report_subdir, f"analysis_filemap.{report_format}"
+        )
         experiment_filemap = experiment_filemap.fill_nan("").fill_null("")
-        write_filemap(experiment_filemap, filemap_path)
+        write_filemap(experiment_filemap, base_filemap_path)
 
     # select the right filemap
-    if overwrite_annotated and os.path.exists(
-        os.path.join(report_subdir, f"analysis_filemap_annotated.{report_format}")
-    ):
-        filemap_path = os.path.join(
-            report_subdir, f"analysis_filemap_annotated.{report_format}"
-        )
+    annotated_filemap_path = find_existing_filemap(
+        report_subdir, "analysis_filemap_annotated"
+    )
+    if overwrite_annotated and annotated_filemap_path is not None:
+        source_filemap_path = annotated_filemap_path
+        filemap_name = "analysis_filemap_annotated"
     else:
-        filemap_path = os.path.join(report_subdir, f"analysis_filemap.{report_format}")
+        source_filemap_path = base_filemap_path
+        filemap_name = "analysis_filemap"
 
-    experiment_filemap = read_filemap(filemap_path)
+    # The run always works on the filemap in the configured report_format; one
+    # found in another format is converted and left untouched.
+    filemap_path = os.path.join(report_subdir, f"{filemap_name}.{report_format}")
+    experiment_filemap = read_filemap(source_filemap_path)
     experiment_filemap = experiment_filemap.fill_nan("").fill_null("")
+    if source_filemap_path != filemap_path:
+        print(
+            f"### Converting {source_filemap_path} to {report_format}: {filemap_path} ###"
+        )
+        write_filemap(experiment_filemap, filemap_path)
 
     # Check for new files added to the raw directory since the filemap was created
     if "Time" in experiment_filemap.columns and "Point" in experiment_filemap.columns:
@@ -211,7 +244,9 @@ def build_blocks_for_subdir(global_config, temp_dir_basename, temp_dir, subdir=N
     # If construction of a filemap we created this run fails partway, drop it so
     # the next run rebuilds instead of reusing the partial one (regen gates on absence).
     base_filemap_path = os.path.join(report_subdir, f"analysis_filemap.{report_format}")
-    already_existed = os.path.exists(base_filemap_path)
+    already_existed = (
+        find_existing_filemap(report_subdir, "analysis_filemap") is not None
+    )
     try:
         build_or_load_filemap(config)
     except Exception:

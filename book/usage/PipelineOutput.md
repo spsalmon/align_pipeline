@@ -46,6 +46,14 @@ adds its output to it as new columns.
 This is the file you open for downstream analysis, and the file the
 [GUI](https://spsalmon.github.io/towbintools_pipeline/usage/usinggui/) annotates.
 
+When a run starts, an existing filemap is reused whatever its format (a new
+filemap is only built when none exists). If both a `.csv` and a `.parquet` are
+present, the most recent one is used. The run always writes to the filemap in the
+configured `report_format`: if the one found is in the other format, it is
+converted (e.g. `analysis_filemap.parquet` is copied to `analysis_filemap.csv`
+when `report_format` is `csv`) and the original is left untouched. The same
+applies to `analysis_filemap_annotated` when `overwrite_annotated_filemap` is set.
+
 ## Provenance: what was actually run
 
 Each run copies into `analysis/pipeline_backup/pipeline_<id>/`:
