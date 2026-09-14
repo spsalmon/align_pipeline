@@ -193,3 +193,4 @@ docs
 .superpowers
 *.pickle
 training/molt_detection/model_checkpoints/
+!towbintools_pipeline/defaults/models/*/*.pkl
