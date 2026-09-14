@@ -668,9 +668,15 @@ def get_python_command(config):
 def create_linker_command(
     python_command,
     temp_dir,
-    result,
+    result=None,
 ):
-    linker_command = f"{python_command} -m towbintools_pipeline.block_linker --temp_dir {temp_dir} --result {result}"
+    # A block with no output has no result to record, so --result is left off
+    # rather than passed as the string "None".
+    linker_command = (
+        f"{python_command} -m towbintools_pipeline.block_linker --temp_dir {temp_dir}"
+    )
+    if result is not None:
+        linker_command += f" --result {result}"
     return linker_command
 
 

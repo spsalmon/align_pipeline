@@ -894,3 +894,44 @@ def test_experiment_dir_cli_overrides_config(tmp_path):
 
     morph_csv = tmp_path / "exp" / "analysis" / "report" / "ch1_seg_morphology.csv"
     assert morph_csv.exists()
+
+
+def test_custom_block_with_no_return_type_runs_and_chains(tmp_path):
+    # A custom block that produces nothing the filemap knows about still has to run
+    # and still has to hand over to the next block.
+    script = tmp_path / "sentinel.py"
+    script.write_text(
+        "import argparse\n"
+        "parser = argparse.ArgumentParser()\n"
+        "parser.add_argument('-f', '--filemap')\n"
+        "parser.add_argument('-c', '--config')\n"
+        "parser.add_argument('-b', '--block_config')\n"
+        "parser.add_argument('-o', '--output')\n"
+        "parser.add_argument('--sentinel')\n"
+        "args = parser.parse_args()\n"
+        "open(args.sentinel, 'w').write('ran')\n"
+    )
+    sentinel = tmp_path / "sentinel.txt"
+
+    config_path = _build_experiment(
+        tmp_path,
+        extra_config={
+            "building_blocks": ["custom", "segmentation"],
+            "custom_script_path": [str(script)],
+            "custom_script_name": ["sentinel"],
+            "custom_script_return_type": [None],
+            "custom_script_parameters": [[f"--sentinel {sentinel}"]],
+        },
+    )
+
+    result = _run_pipeline(config_path)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert sentinel.read_text() == "ran"
+    # The block after it still ran, so the chain was not broken.
+    masks = tmp_path / "exp" / "analysis" / "ch1_seg"
+    assert masks.is_dir() and any(masks.iterdir())
+    # And nothing was added to the filemap for it.
+    with open(tmp_path / "exp" / "analysis" / "report" / "analysis_filemap.csv") as f:
+        header = f.readline()
+    assert "sentinel" not in header

@@ -355,6 +355,43 @@ class BuildingBlock(ABC):
 
             return output_file
 
+        else:
+            # A block that produces nothing the filemap knows about: run it, then
+            # chain to the next block with no result to record. The inputs are
+            # pickled under the same name the csv branch uses, because
+            # CustomBuildingBlock.create_command passes that pickle as --filemap.
+            input_files, _ = self.get_input_and_output_files(
+                config, experiment_filemap, config["analysis_subdir"]
+            )
+
+            input_pickle_path, pickled_block_config, pickled_config = pickle_objects(
+                temp_dir,
+                {"path": "input_files", "obj": input_files},
+                {"path": "block_config", "obj": block_config},
+                {"path": "config", "obj": config},
+            )
+
+            command = self.create_command(
+                python_command,
+                input_pickle_path,
+                None,
+                pickled_block_config,
+                pickled_config,
+                config,
+                pickled_filemap_path=pickled_filemap_path,
+            )
+
+            run_command(
+                command,
+                self.name,
+                config,
+                requires_gpu=self.requires_gpu,
+                run_linker=True,
+                linker_command=create_linker_command(python_command, temp_dir),
+            )
+
+            return None
+
 
 class SegmentationBuildingBlock(BuildingBlock):
     def __init__(self, block_config):
@@ -651,27 +688,25 @@ class CustomBuildingBlock(BuildingBlock):
 
     def get_output_name(self, config, subdir):
         custom_script_name = self.block_config["custom_script_name"]
-        analysis_subdir = config["analysis_subdir"]
-        report_subdir = config["report_subdir"]
 
         if self.return_type == "subdir":
-            output = os.path.join(analysis_subdir, custom_script_name)
-        if subdir is not None:
-            output = os.path.join(output, subdir)
-
-        elif self.return_type == "csv":
+            output = os.path.join(config["analysis_subdir"], custom_script_name)
             if subdir is not None:
-                output = os.path.join(
-                    report_subdir,
-                    f"{subdir}_{custom_script_name}.{config['report_format']}",
-                )
-            else:
-                output = os.path.join(
-                    report_subdir,
-                    f"{custom_script_name}.{config['report_format']}",
-                )
+                output = os.path.join(output, subdir)
+            return output
 
-        return output
+        if self.return_type == "csv":
+            name = (
+                custom_script_name
+                if subdir is None
+                else f"{subdir}_{custom_script_name}"
+            )
+            return os.path.join(
+                config["report_subdir"], f"{name}.{config['report_format']}"
+            )
+
+        # A block with no return type has no output path.
+        return None
 
     def get_input_and_output_files(self, config, experiment_filemap, subdir):
         return experiment_filemap, None
