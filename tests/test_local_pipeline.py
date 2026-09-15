@@ -647,15 +647,16 @@ def test_cli_init_config_non_destructive(tmp_path):
 
 
 def test_run_config_and_version_info_backed_up(tmp_path):
-    # The config and a git_info.txt land in the backup, which sits beside the
-    # report (under the analysis dir), not inside it.
+    # The config and a git_info.txt land in the backup, inside the report dir.
     config_path = _build_experiment(tmp_path)
 
     result = _run_pipeline(config_path, ["--temp_dir", str(tmp_path / "pipeline_temp")])
     assert result.returncode == 0, f"pipeline failed:\n{result.stdout}\n{result.stderr}"
 
     backups = list(
-        (tmp_path / "exp" / "analysis" / "pipeline_backup").glob("pipeline_*")
+        (tmp_path / "exp" / "analysis" / "report" / "pipeline_backup").glob(
+            "pipeline_*"
+        )
     )
     assert len(backups) == 1
     assert (backups[0] / "config.yaml").exists()
@@ -674,7 +675,9 @@ def test_repeated_runs_get_separate_backups(tmp_path):
         ), f"pipeline failed:\n{result.stdout}\n{result.stderr}"
 
     backups = list(
-        (tmp_path / "exp" / "analysis" / "pipeline_backup").glob("pipeline_*")
+        (tmp_path / "exp" / "analysis" / "report" / "pipeline_backup").glob(
+            "pipeline_*"
+        )
     )
     assert len(backups) == 2
 
@@ -691,7 +694,9 @@ def test_cleanup_on_success_removes_temp_dir(tmp_path):
     assert list((tmp_path / "temp_files").glob("pipeline_*")) == []
     # the durable backup remains
     backups = list(
-        (tmp_path / "exp" / "analysis" / "pipeline_backup").glob("pipeline_*")
+        (tmp_path / "exp" / "analysis" / "report" / "pipeline_backup").glob(
+            "pipeline_*"
+        )
     )
     assert len(backups) == 1
     # the outputs remain

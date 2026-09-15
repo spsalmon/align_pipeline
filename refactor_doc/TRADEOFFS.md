@@ -184,8 +184,8 @@ already external and `-t <path>` covers the home-quota case.
 user. Mitigated: gitignored and transient.*
 Reversible: easy.
 
-**`pipeline_backup/` moved beside `report/` rather than inside it.**
-`report/` holds results, the backup holds provenance.
+**`pipeline_backup/` lives inside `report/`.**
+Provenance is kept together with the results it produced.
 *Cost: backups from earlier runs remain in the old location; there is no
 migration.*
 Reversible: easy.

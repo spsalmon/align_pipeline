@@ -191,12 +191,6 @@ def run_detect_molts_deep_learning(
             heatmaps = heatmaps.cpu().numpy()
             presences = presences.cpu().numpy()
 
-            print(
-                f"heatmaps shape: {heatmaps.shape}, presences shape: {presences.shape}"
-            )
-            print(f"heatmaps: {heatmaps}")
-            print(f"presences: {presences}")
-
             for j, (heatmap, presence) in enumerate(zip(heatmaps, presences)):
                 if j in invalid_series_index:
                     molts_indices.append(

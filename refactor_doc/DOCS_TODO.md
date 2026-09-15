@@ -244,9 +244,8 @@ Four tiers:
   branch/commit/status + interpreter/package versions) into the run's temp dir,
   which syncs into the backup. Done in Python, so local runs are recorded too
   (previously only the sbatch launcher did this, slurm-only).
-- The backup lives at `<experiment>/analysis/pipeline_backup/pipeline_<id>/`
-  (beside `report/`, not inside it — report holds results, backup holds
-  provenance).
+- The backup lives at `<experiment>/analysis/report/pipeline_backup/pipeline_<id>/`
+  (in subdirectory mode: `report/<subdir>/pipeline_backup/pipeline_<id>/`).
 - Temp and backup are write-only records: the pipeline reads its config from the
   original path given with `-c`, never from the temp copy. This is why a
   relative `slurm_config:` resolves against the original config's directory. (The

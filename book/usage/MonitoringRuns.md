@@ -77,7 +77,7 @@ configuration was fine.
 ## Cleaning up
 
 The scratch directory is not needed once a run has finished — a full copy of it
-is kept in the experiment's `analysis/pipeline_backup/` folder. Two ways to clear
+is kept in the experiment's `analysis/report/pipeline_backup/` folder. Two ways to clear
 it:
 
 - Set `cleanup_on_success: True` in your configuration, and each successful run

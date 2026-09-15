@@ -9,11 +9,11 @@ my_experiment/
 └── analysis/
     ├── ch2_seg/                  <- images produced by a block
     ├── ch2_seg_str/
-    ├── report/                   <- the results
-    │   ├── analysis_filemap.parquet
-    │   └── ch2_seg_str_morphology.parquet
-    └── pipeline_backup/          <- what was run, and how
-        └── pipeline_1234567/
+    └── report/                   <- the results
+        ├── analysis_filemap.parquet
+        ├── ch2_seg_str_morphology.parquet
+        └── pipeline_backup/      <- what was run, and how
+            └── pipeline_1234567/
 ```
 
 ## Images
@@ -56,7 +56,7 @@ applies to `analysis_filemap_annotated` when `overwrite_annotated_filemap` is se
 
 ## Provenance: what was actually run
 
-Each run copies into `analysis/pipeline_backup/pipeline_<id>/`:
+Each run copies into `analysis/report/pipeline_backup/pipeline_<id>/`:
 
 - the configuration file(s) used;
 - `git_info.txt` — the exact version of the pipeline and of the packages it ran
@@ -64,5 +64,4 @@ Each run copies into `analysis/pipeline_backup/pipeline_<id>/`:
 - the complete logs of the run.
 
 You can therefore always go back to an old analysis and know exactly how it was
-produced. This folder sits **beside** `report/`, not inside it: `report/` holds
-results, the backup holds the record.
+produced. The backup is kept inside `report/`, next to the results it produced.

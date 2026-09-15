@@ -21,15 +21,14 @@ from towbintools_pipeline import utils  # noqa: E402
 
 cv2.setNumThreads(1)
 
-
-def start_logger_if_necessary(level=logging.DEBUG):
-    logger = logging.getLogger("mylogger")
-    if len(logger.handlers) == 0:
-        logger.setLevel(level)
-        sh = logging.StreamHandler()
-        sh.setFormatter(logging.Formatter("%(levelname)s - %(asctime)s - %(message)s"))
-        logger.addHandler(sh)
-    return logger
+# def start_logger_if_necessary(level=logging.DEBUG):
+#     logger = logging.getLogger("mylogger")
+#     if len(logger.handlers) == 0:
+#         logger.setLevel(level)
+#         sh = logging.StreamHandler()
+#         sh.setFormatter(logging.Formatter("%(levelname)s - %(asctime)s - %(message)s"))
+#         logger.addHandler(sh)
+#     return logger
 
 
 def mask_preprocessing(mask):
@@ -91,8 +90,6 @@ def straighten_and_save(
         if channel_to_allign is None and source_image_channels is not None:
             channel_to_allign = source_image_channels[0]
 
-        logger = start_logger_if_necessary()
-        logger.debug(f"Accessing {mask_path}")
         mask = image_handling.read_tiff_file(mask_path)
         mask = mask_preprocessing(mask)
 
@@ -104,7 +101,6 @@ def straighten_and_save(
             else:
                 image = preprocessed_mask
         else:
-            logger.debug(f"Accessing {source_image_path}")
             image = get_image(
                 source_image_path,
                 mask,
@@ -119,10 +115,7 @@ def straighten_and_save(
                 straightened_image = straighten_zstack_image(image, mask)
             else:
                 straightened_image = straighten_2D_image(image, mask)
-        except Exception as e:
-            logger.exception(
-                f"Straightening failed for {source_image_path} with error: {e}"
-            )
+        except Exception:
             if isinstance(image, dict):
                 image = image["straighten"]
 
@@ -130,8 +123,7 @@ def straighten_and_save(
             # # add empty channel dimension if is_stack is True
             if is_stack:
                 straightened_image = straightened_image[:, np.newaxis, ...]
-    except Exception as e:
-        logger.exception(f"Processing failed for {source_image_path} with error: {e}")
+    except Exception:
         n_channels = len(source_image_channels) if source_image_channels else 1
         straightened_image = np.zeros((n_channels, 128, 128)).astype(np.uint8).squeeze()
 
@@ -244,7 +236,6 @@ def straighten_2D_image(image, mask):
 
 def main(input_pickle, output_pickle, block_config, n_jobs):
     block_config = utils.load_pickles(block_config)[0]
-    start_logger_if_necessary()
     logging.debug(f"Using block_config: {block_config}")
 
     input_files, output_files = utils.load_pickles(input_pickle, output_pickle)
