@@ -98,7 +98,13 @@ def open_filemap(filemap_path, open_annotated=True, lazy_loading=False):
     # replace worm_type columns with qc columns
     for col in filemap.columns:
         if "worm_type" in col:
-            filemap = filemap.rename({col: col.replace("worm_type", "qc")})
+            try:
+                filemap = filemap.rename({col: col.replace("worm_type", "qc")})
+            except pl.exceptions.DuplicateError:
+                print(
+                    f"Duplicate column encountered when renaming {col}, dropping it instead."
+                )
+                filemap = filemap.drop(col)
     # Heal join-artifact `_right` columns leaked by an earlier save-collision bug.
     filemap = _drop_join_artifact_columns(filemap)
     # Backup the filemap
