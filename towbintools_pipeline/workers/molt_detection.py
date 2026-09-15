@@ -197,7 +197,12 @@ def run_detect_molts_deep_learning(
                         [np.nan] * 4
                     )  # series was invalid so no molts could be detected
                 else:
-                    m = heatmap_to_keypoints_1D(heatmap, presence)
+                    # the collate function pads series to a multiple of 64, crop the
+                    # heatmap so that keypoints can't be detected in the padded region
+                    original_length = original_shapes[j][-1]
+                    m = heatmap_to_keypoints_1D(
+                        heatmap[..., :original_length], presence
+                    )
                     print(f"Molts detected : {m}")
                     molts_indices.append(m)
 
