@@ -107,7 +107,6 @@ def build_or_load_filemap(config):
         base_filemap_path = os.path.join(
             report_subdir, f"analysis_filemap.{report_format}"
         )
-        experiment_filemap = experiment_filemap.fill_nan("").fill_null("")
         write_filemap(experiment_filemap, base_filemap_path)
 
     # select the right filemap
@@ -125,7 +124,6 @@ def build_or_load_filemap(config):
     # found in another format is converted and left untouched.
     filemap_path = os.path.join(report_subdir, f"{filemap_name}.{report_format}")
     experiment_filemap = read_filemap(source_filemap_path)
-    experiment_filemap = experiment_filemap.fill_nan("").fill_null("")
     if source_filemap_path != filemap_path:
         print(
             f"### Converting {source_filemap_path} to {report_format}: {filemap_path} ###"
@@ -159,15 +157,6 @@ def build_or_load_filemap(config):
                     new_rows = new_rows.select(experiment_filemap.columns)
                     experiment_filemap = pl.concat([experiment_filemap, new_rows]).sort(
                         ["Time", "Point"]
-                    )
-                    # Fill string columns with ""; numeric nulls (ExperimentTime)
-                    # stay null and are computed below.
-                    experiment_filemap = experiment_filemap.with_columns(
-                        pl.col(c).fill_null("")
-                        for c, dt in zip(
-                            experiment_filemap.columns, experiment_filemap.dtypes
-                        )
-                        if dt in (pl.Utf8, pl.String, pl.Categorical)
                     )
                     write_filemap(experiment_filemap, filemap_path)
         except Exception as e:

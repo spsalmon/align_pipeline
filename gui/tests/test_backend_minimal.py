@@ -4,6 +4,7 @@ from app_components.backend import MOLT_ENTRY_COLUMNS
 from app_components.backend import _drop_join_artifact_columns
 from app_components.backend import build_single_values_df
 from app_components.backend import get_molt_interval_bands
+from app_components.backend import open_filemap
 from app_components.backend import populate_column_choices
 from app_components.backend import process_feature_at_molt_columns
 from app_components.backend import set_marker_shape
@@ -203,36 +204,32 @@ def test_process_feature_at_molt_columns_adds_feature_at_entry_columns():
         assert col in result.columns
 
 
-def test_process_feature_at_molt_columns_tolerates_empty_string_event_columns():
-    """Older filemaps persisted freshly-introduced event columns (e.g. the
-    molt-entry columns) as empty strings before any value existed. Reading such a
-    filemap back yields String columns that must not break the Float64 casts."""
-    filemap = make_minimal_filemap()
-    filemap, _, feature_columns, *_ = populate_column_choices(filemap)
-    feature = feature_columns[0]
-    # Simulate an intermediate-version filemap: the entry event column and its
-    # feature-at-event column exist but are String "" (never populated).
-    filemap = filemap.with_columns(
+def open_legacy_event_filemap(tmp_path):
+    """Open a filemap persisted by older pipelines, where never-populated event
+    columns (e.g. the molt-entry columns) were stored as "" strings."""
+    filemap, _, feature_columns, *_ = populate_column_choices(make_minimal_filemap())
+    path = tmp_path / "analysis_filemap.parquet"
+    filemap.with_columns(
+        pl.lit("").alias("ExperimentTime"),
         pl.lit("").alias("M4Entry"),
-        pl.lit("").alias(f"{feature}_at_M4Entry"),
-    )
-    # Must not raise InvalidOperationError on the str -> f64 cast.
+        pl.lit("").alias(f"{feature_columns[0]}_at_M4Entry"),
+    ).write_parquet(path)
+    filemap, _ = open_filemap(str(path), open_annotated=False)
+    return filemap, feature_columns
+
+
+def test_process_feature_at_molt_columns_handles_legacy_event_columns(tmp_path):
+    filemap, feature_columns = open_legacy_event_filemap(tmp_path)
     result = process_feature_at_molt_columns(filemap, feature_columns)
-    assert f"{feature}_at_M4Entry" in result.columns
-    values = result.select(f"{feature}_at_M4Entry").to_numpy().squeeze().astype(float)
+    column = f"{feature_columns[0]}_at_M4Entry"
+    values = result.select(column).to_numpy().squeeze().astype(float)
     assert np.all(np.isnan(values))
 
 
-def test_build_single_values_df_tolerates_empty_string_event_columns():
-    filemap = make_minimal_filemap()
-    filemap, _, feature_columns, *_ = populate_column_choices(filemap)
-    feature = feature_columns[0]
-    filemap = filemap.with_columns(
-        pl.lit("").alias("M4Entry"),
-        pl.lit("").alias(f"{feature}_at_M4Entry"),
-    )
+def test_build_single_values_df_handles_legacy_event_columns(tmp_path):
+    filemap, _ = open_legacy_event_filemap(tmp_path)
     df = build_single_values_df(filemap)
-    assert "M4Entry" in df.columns
+    assert df.schema["M4Entry"] == pl.Float64
 
 
 def test_existing_ecdysis_columns_still_present():

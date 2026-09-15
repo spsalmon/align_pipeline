@@ -67,8 +67,6 @@ def run_detect_molts(
 ):
     data_of_point = analysis_filemap.filter(pl.col("Point") == point)
     volumes = data_of_point.select(pl.col(volume_column))
-
-    volumes = volumes.replace("", np.nan)
     volumes = volumes.to_numpy().squeeze().astype(float)
 
     # find the qc column with the best match to the volume column
