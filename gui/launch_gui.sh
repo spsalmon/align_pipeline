@@ -4,7 +4,7 @@
 cd "$(dirname "$0")/.."
 
 # --- Configuration: edit these ---
-FILEMAP_PATH="/mnt/towbin.data/shared/kstojanovski/20240212_Orca_10x_yap-1del_col-10-tir_wBT160-186-310-337-380-393_25C_20240212_164059_429/analysis_sacha/report/analysis_filemap.parquet"
+FILEMAP_PATH="/mnt/towbin.data/shared/kstojanovski/20240202_Orca_10x_yap-1del_col-10-tir_wBT160-186-310-337-380-393_25C_20240202_171239_051/analysis_sacha/report/analysis_filemap.parquet"
 OPEN_ANNOTATED=1      # 1 = open annotated if exists, 0 = always open original
 RECOMPUTE_VALUES_AT_MOLT=0            # 1 = recompute features at molt, 0 = skip if already computed
 PORT=0             # 0 = random available port
