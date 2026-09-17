@@ -20,6 +20,7 @@ project:
         - file: usage/PipelineOutput.md
         - file: usage/UsingGUI.md
         - file: usage/Plotting.md
+        - file: usage/Towbintools.md
     - title: Training
       children:
         - file: training/Training.md
