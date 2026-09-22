@@ -22,7 +22,9 @@ cd "$(dirname "$0")"
 rm -f conda-lock.yml conda-linux-64.lock conda-linux-64.lock.yml
 
 # 1. Solve the environment -> conda-lock.yml
-~/.local/bin/micromamba run -n towbintools conda-lock lock -f environment.yml -p linux-64 --micromamba
+# Driven through conda_lock_patched.py rather than the conda-lock executable so
+# that manylinux_2_27 wheels (nvidia-nccl-cu13, via xgboost) can be resolved.
+~/.local/bin/micromamba run -n towbintools python conda_lock_patched.py lock -f environment.yml -p linux-64 --micromamba
 
 # 2. Render the explicit single-platform lock -> conda-linux-64.lock
 ~/.local/bin/micromamba run -n towbintools conda-lock render -k explicit
