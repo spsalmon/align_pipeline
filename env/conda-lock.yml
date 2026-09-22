@@ -1598,10 +1598,10 @@ package:
     libstdcxx: '>=15'
     python: ''
     python_abi: 3.12.*
-  url: https://conda.anaconda.org/conda-forge/linux-64/kiwisolver-1.5.1-py312h9be0db6_1.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/kiwisolver-1.5.1-py312h9be0db6_2.conda
   hash:
-    md5: 231fede9051444ed7d243f78f3cb4a8f
-    sha256: 608716113cb671415a038654e2bc55c2372c8817c24c0a5043323fd7c06b86f3
+    md5: 290fada94437a4f9fd7454a9fd1ddf70
+    sha256: 82f4b79130b23740c944de088dd45b32634e41c0effb0b38aec40c9d8098cf51
   category: main
   optional: false
 - name: krb5
