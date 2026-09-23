@@ -5,10 +5,9 @@ import shutil
 import numpy as np
 import polars as pl
 import yaml
-from joblib import Parallel
-from joblib import delayed
+from align_toolbox.foundation.image_handling import read_tiff_file
+from joblib import Parallel, delayed
 from tifffile import imwrite
-from towbintools.foundation.image_handling import read_tiff_file
 from tqdm import tqdm
 
 np.random.seed(387799)

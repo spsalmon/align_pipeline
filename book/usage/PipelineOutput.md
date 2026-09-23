@@ -44,7 +44,7 @@ each measured feature, the quality control result, the detected molts. Every blo
 adds its output to it as new columns.
 
 This is the file you open for downstream analysis, and the file the
-[GUI](https://spsalmon.github.io/towbintools_pipeline/usage/usinggui/) annotates.
+[GUI](https://spsalmon.github.io/align_pipeline/usage/usinggui/) annotates.
 
 When a run starts, an existing filemap is reused whatever its format (a new
 filemap is only built when none exists). If both a `.csv` and a `.parquet` are

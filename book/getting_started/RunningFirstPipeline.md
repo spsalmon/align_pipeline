@@ -9,7 +9,7 @@ The pipeline ships with a working example configuration. Copy it into a folder o
 your choice with:
 
 ```bash
-towbintools-pipeline init-configs ~/my_configs
+align_pipeline init-configs ~/my_configs
 ```
 
 This writes two files:
@@ -17,13 +17,13 @@ This writes two files:
 - `config.yaml` — the analysis configuration (this is the one you will edit)
 - `slurm_config.yaml` — how much memory, CPU and time each step gets on the
   cluster. You can ignore it until you need to change it, see
-  [running on a cluster](https://spsalmon.github.io/towbintools_pipeline/usage/runningonacluster/).
+  [running on a cluster](https://spsalmon.github.io/align_pipeline/usage/runningonacluster/).
 
 Both are copied because the main configuration refers to the SLURM one by name.
 
 ```{tip}
 Never edit the bundled configuration inside the pipeline folder
-(`towbintools_pipeline/defaults/configs/`) — it is reset to its upstream version
+(`align_pipeline/defaults/configs/`) — it is reset to its upstream version
 every time you update. Always work on a copy.
 ```
 
@@ -34,7 +34,7 @@ images follow the naming scheme `TimeX_PointY_(...).tiff`, where `Time` refers t
 the index in your time loop and `Point` is the unique identifier of the position
 (one individual worm, if each position contains one worm). All images (planes,
 channels, etc.) for a given position at a given time should be in the same
-OME-TIFF file. For more details, see [pipeline input](https://spsalmon.github.io/towbintools_pipeline/usage/pipelineinput/).
+OME-TIFF file. For more details, see [pipeline input](https://spsalmon.github.io/align_pipeline/usage/pipelineinput/).
 
 Let's break the configuration down.
 
@@ -120,7 +120,7 @@ rerun_molt_detection: [ False ]
   exists. If True, everything is reprocessed.
 
 Then come the parameters of each block. They are described in detail in the
-[building blocks](https://spsalmon.github.io/towbintools_pipeline/building-blocks/buildingblock/)
+[building blocks](https://spsalmon.github.io/align_pipeline/building-blocks/buildingblock/)
 section. Here is the configuration of the two segmentation blocks:
 
 ```yaml
@@ -136,7 +136,7 @@ batch_size: [ 4 ]
 ```
 
 Every option in the full list of configuration keys is described in
-[configuration](https://spsalmon.github.io/towbintools_pipeline/usage/configuration/).
+[configuration](https://spsalmon.github.io/align_pipeline/usage/configuration/).
 
 ## 3. Run it
 
@@ -147,14 +147,14 @@ configurations is a good idea. Assuming you saved it as
 **On the cluster:**
 
 ```bash
-cd ~/towbintools_pipeline # or wherever you put the pipeline folder
+cd ~/align_pipeline # or wherever you put the pipeline folder
 bash scripts/run_pipeline.sh -c ~/my_configs/my_experiment.yaml
 ```
 
 **On your own machine** (with `backend: "local"` in the config), from anywhere:
 
 ```bash
-towbintools-pipeline run ~/my_configs/my_experiment.yaml
+align_pipeline run ~/my_configs/my_experiment.yaml
 ```
 
 The `-c` argument specifies the configuration to run. Two more optional arguments
@@ -178,7 +178,7 @@ file is reported immediately, in your terminal, with every problem listed at onc
 
 Once the run starts, it prints its list of steps and then a marker around each
 one, so you can always tell where it is. See
-[monitoring a run](https://spsalmon.github.io/towbintools_pipeline/usage/monitoringruns/)
+[monitoring a run](https://spsalmon.github.io/align_pipeline/usage/monitoringruns/)
 for where the logs live and what to do when something goes wrong.
 
 That's it! Once you are happy with your configuration, analysing a new experiment

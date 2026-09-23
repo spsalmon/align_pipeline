@@ -17,7 +17,7 @@ These resource requests live in their own file, next to your main configuration:
 slurm_config: "slurm_config.yaml"
 ```
 
-The path is relative to the main configuration file. `towbintools-pipeline
+The path is relative to the main configuration file. `align_pipeline
 init-configs` copies both files together for this reason.
 
 The file looks like this:
@@ -104,7 +104,7 @@ conda, or a plain virtual environment, set `python_command` in your main
 configuration:
 
 ```yaml
-python_command: "conda run -n towbintools python"
+python_command: "conda run -n align_pipeline python"
 ```
 
 This one key controls how Python is started everywhere, both for the orchestrator

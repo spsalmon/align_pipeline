@@ -1,6 +1,6 @@
 # Plotting
 
-We provide a number of plotting utilities for visualizing the results of the pipeline. Those functions are part of the `towbintools.plotting` module. Full documentation of those function is available [here](https://towbintools.readthedocs.io/en/latest/towbintools_plotting.html).
+We provide a number of plotting utilities for visualizing the results of the pipeline. Those functions are part of the `align_toolbox.plotting` module. Full documentation of those function is available [here](https://align-toolbox.readthedocs.io/en/latest/align_toolbox_plotting.html).
 
 ## Specifying experimental conditions
 

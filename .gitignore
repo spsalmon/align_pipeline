@@ -176,9 +176,9 @@ tests/*_analysis/
 
 configs/*
 configs/config.yaml
-towbintools_pipeline/defaults/config/*
-!towbintools_pipeline/defaults/config/config.yaml
-!towbintools_pipeline/defaults/config/slurm_config.yaml
+align_pipeline/defaults/config/*
+!align_pipeline/defaults/config/config.yaml
+!align_pipeline/defaults/config/slurm_config.yaml
 training/*.yaml
 training/segmentation/configs/*
 !training/segmentation/configs/segmentation_training_config.yaml
@@ -193,4 +193,4 @@ docs
 .superpowers
 *.pickle
 training/molt_detection/model_checkpoints/
-!towbintools_pipeline/defaults/models/*/*.pkl
+!align_pipeline/defaults/models/*/*.pkl

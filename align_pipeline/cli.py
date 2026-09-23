@@ -1,7 +1,7 @@
-"""Console entry point: dispatch `towbintools-pipeline <subcommand>` to the
+"""Console entry point: dispatch `align_pipeline <subcommand>` to the
 right handler. Handlers lazy-import their module so a plain `run` does not pay
 for another subcommand's dependencies. With no known subcommand the arguments
-are treated as a `run`, so the previous `towbintools-pipeline -c config.yaml`
+are treated as a `run`, so the previous `align_pipeline -c config.yaml`
 form keeps working.
 """
 
@@ -18,7 +18,7 @@ _CONFIG_FILES = ("config.yaml", "slurm_config.yaml")
 def _run(argv):
     # Run the pipeline. Delegates to the runner, which accepts a positional
     # config or -c plus -e/-t.
-    from towbintools_pipeline.init_pipeline import main as run_main
+    from align_pipeline.init_pipeline import main as run_main
 
     run_main(argv)
 
@@ -28,7 +28,7 @@ def _init_config(argv):
     # from them without digging into the installed package. Configs only (the
     # bundled models are large); non-destructive unless --force.
     parser = argparse.ArgumentParser(
-        prog="towbintools-pipeline init-configs",
+        prog="align_pipeline init-configs",
         description="Copy the bundled default config files into a directory.",
     )
     parser.add_argument(
@@ -65,7 +65,7 @@ SUBCOMMANDS = {
 
 
 def _print_help():
-    print("Usage: towbintools-pipeline <command> [options]\n")
+    print("Usage: align_pipeline <command> [options]\n")
     print("Commands:")
     print("  run           Run the pipeline (positional config or -c/--config)")
     print("  init-configs  Copy the bundled default config files into a directory")

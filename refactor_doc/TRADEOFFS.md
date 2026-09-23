@@ -44,14 +44,14 @@ Reversible: easy.
 **Flat package layout, not `src/`.**
 `src/` would require an install or `PYTHONPATH` for the package to be importable,
 coupling every cluster invocation to a correct install. Flat keeps
-`python -m towbintools_pipeline...` working from the repo root anywhere.
+`python -m align_pipeline...` working from the repo root anywhere.
 *Cost: the repo root is importable, so a working tree can silently shadow an
 installed copy — the class of bug `src/` exists to prevent.*
 Reversible: moderate; touches every invocation path.
 
 **Workers are invoked as modules, not by absolute file path.**
-`create_command` runs `python -m towbintools_pipeline.workers.<name>`, so workers
-resolve by import and use package-clean imports (`from towbintools_pipeline
+`create_command` runs `python -m align_pipeline.workers.<name>`, so workers
+resolve by import and use package-clean imports (`from align_pipeline
 import utils`) instead of relying on their own directory being on `sys.path`.
 *Cost: the worker's environment must have the package importable — installed, or
 launched from the repo root. The outer job already required this, so it is not
@@ -60,7 +60,7 @@ the workers.*
 Reversible: easy — `create_command` is the single place.
 
 **Bundled `defaults/` (configs + models) live inside the package, resolved by `__file__`.**
-`defaults/` moved from the repo root into `towbintools_pipeline/`, is declared as
+`defaults/` moved from the repo root into `align_pipeline/`, is declared as
 package data, and is looked up via `_PIPELINE_DIR` (the package dir from
 `__file__`) rather than `importlib.resources`. The flat layout means the package
 is always real files on disk (editable, checkout, or a normal wheel), so a plain
@@ -92,8 +92,8 @@ lacks would install nothing and only surface as an import error at runtime.*
 Reversible: easy.
 
 **The installed command dispatches subcommands; an unknown first arg means `run`.**
-`towbintools-pipeline` routes `run` / `init-configs` and, for anything else, passes
-the arguments straight to the runner — so `towbintools-pipeline -c config.yaml`
+`align_pipeline` routes `run` / `init-configs` and, for anything else, passes
+the arguments straight to the runner — so `align_pipeline -c config.yaml`
 (and a bare positional config) keep working after subcommands were added, and
 extras can attach as further subcommands.
 *Cost: the first argument is matched against subcommand names before being treated
@@ -143,7 +143,7 @@ This is what makes adapting to a new cluster a config-only change.
 *Cost: the flags come from a Python call made before submission. If that call
 fails (bad config, broken env) it silently yields nothing and the job falls back
 to the bare header. Mitigated by the pre-flight
-`python -m towbintools_pipeline.run_params --sbatch-init -c <config>`.*
+`python -m align_pipeline.run_params --sbatch-init -c <config>`.*
 Reversible: easy.
 
 **Config validation re-checks per-block list lengths that the parser also checks.**

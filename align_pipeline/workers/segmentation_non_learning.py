@@ -2,16 +2,15 @@ import logging
 import os
 
 import numpy as np
-from joblib import Parallel
-from joblib import delayed
-from joblib import parallel_config
+from align_toolbox.foundation.image_handling import check_if_stack, read_tiff_file
+from align_toolbox.segmentation.segmentation_tools import (
+    get_segmentation_function,
+    segment_image,
+)
+from joblib import Parallel, delayed, parallel_config
 from tifffile import imwrite
-from towbintools.foundation.image_handling import check_if_stack
-from towbintools.foundation.image_handling import read_tiff_file
-from towbintools.segmentation.segmentation_tools import get_segmentation_function
-from towbintools.segmentation.segmentation_tools import segment_image
 
-from towbintools_pipeline import utils
+from align_pipeline import utils
 
 logging.basicConfig(level=logging.INFO)
 

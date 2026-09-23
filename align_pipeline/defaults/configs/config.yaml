@@ -37,7 +37,7 @@ slurm_config: "slurm_config.yaml"
 # The command that launches python everywhere: the worker jobs and (via
 # run_pipeline.sh) the outer slurm job. Defaults to the active interpreter
 # (local) or the micromamba runner (slurm).
-# python_command: "conda run -n towbintools python"
+# python_command: "conda run -n align_pipeline python"
 
 #########################################################################################################
 ################################# IMAGE ANALYSIS PIPELINE CONFIGURATION #################################

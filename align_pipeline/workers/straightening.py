@@ -5,17 +5,17 @@ os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import cv2  # noqa: E402
 import numpy as np  # noqa: E402
+from align_toolbox.foundation import binary_image  # noqa: E402
+from align_toolbox.foundation import image_handling  # noqa: E402
+from align_toolbox.foundation.image_handling import check_if_stack  # noqa: E402
+from align_toolbox.straightening import Warper  # noqa: E402
 from joblib import Parallel  # noqa: E402
 from joblib import delayed  # noqa: E402
 from joblib import parallel_config  # noqa: E402
 from scipy.ndimage import binary_fill_holes  # noqa: E402
 from tifffile import imwrite  # noqa: E402
-from towbintools.foundation import binary_image  # noqa: E402
-from towbintools.foundation import image_handling  # noqa: E402
-from towbintools.foundation.image_handling import check_if_stack  # noqa: E402
-from towbintools.straightening import Warper  # noqa: E402
 
-from towbintools_pipeline import utils  # noqa: E402
+from align_pipeline import utils  # noqa: E402
 
 # from threadpoolctl import threadpool_limits, threadpool_info
 

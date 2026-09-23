@@ -12,7 +12,7 @@ PREPROCESSING_TYPE="binarize"  # Change this to the desired preprocessing type
 KEEP_ONLY_BIGGEST_OBJECT=true
 
 if [ "$KEEP_ONLY_BIGGEST_OBJECT" = true ]; then
-    ~/.local/bin/micromamba run -n towbintools python3 preprocess_masks.py --database_path "$DATABASE_PATH" --preprocessing_type "$PREPROCESSING_TYPE" --keep_only_biggest_object
+    ~/.local/bin/micromamba run -n align_pipeline python3 preprocess_masks.py --database_path "$DATABASE_PATH" --preprocessing_type "$PREPROCESSING_TYPE" --keep_only_biggest_object
 else
-    ~/.local/bin/micromamba run -n towbintools python3 preprocess_masks.py --database_path "$DATABASE_PATH" --preprocessing_type "$PREPROCESSING_TYPE"
+    ~/.local/bin/micromamba run -n align_pipeline python3 preprocess_masks.py --database_path "$DATABASE_PATH" --preprocessing_type "$PREPROCESSING_TYPE"
 fi

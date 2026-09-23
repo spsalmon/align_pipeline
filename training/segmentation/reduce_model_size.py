@@ -1,6 +1,6 @@
 import os
 
-from towbintools.deep_learning.utils.util import create_lightweight_checkpoint
+from align_toolbox.deep_learning.utils.util import create_lightweight_checkpoint
 
 if __name__ == "__main__":
     model_dir = "/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/models/paper/body/towbintools_medium"

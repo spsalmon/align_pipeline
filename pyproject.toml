@@ -1,17 +1,17 @@
 # Packaging for the pipeline core: makes the repo pip-installable
 # (`pip install -e .`) so it runs from any cwd, declares the core runtime
-# dependencies, and exposes the `towbintools-pipeline` command.
+# dependencies, and exposes the `align_pipeline` command.
 [build-system]
 requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "towbintools_pipeline"
+name = "align_pipeline"
 version = "0.1.0"
-description = "Configurable image-analysis pipeline built on towbintools."
+description = "Configurable image-analysis pipeline built on align_toolbox."
 requires-python = ">=3.11"
 dependencies = [
-    "towbintools>=0.4.3",  # 0.4.3+ has the current molt-detection model architecture
+    "align_toolbox>=0.5.1",
     "numpy",
     "polars",
     "pyarrow",
@@ -19,9 +19,9 @@ dependencies = [
     "tifffile",
     "pyyaml",
     "lxml",
-    "tqdm",  # used directly; not pulled in by towbintools
+    "tqdm",  # used directly; not pulled in by align_toolbox
     # Imported directly by the pipeline but typically pulled in transitively by
-    # towbintools; declared explicitly so a change in its requirements cannot
+    # align_toolbox; declared explicitly so a change in its requirements cannot
     # silently drop them from under the pipeline.
     "opencv-contrib-python",
     "pandas",
@@ -37,21 +37,21 @@ dev = ["pytest"]
 cellpose = ["cellpose==4.2.1.1"]
 
 [project.scripts]
-# Subcommand dispatcher: `towbintools-pipeline run|init-configs`. With no known
-# subcommand it forwards to `run`, so `towbintools-pipeline -c config.yaml` and
-# `python -m towbintools_pipeline.init_pipeline` both still work.
+# Subcommand dispatcher: `align_pipeline run|init-configs`. With no known
+# subcommand it forwards to `run`, so `align_pipeline -c config.yaml` and
+# `python -m align_pipeline.init_pipeline` both still work.
 # `tt-pipeline` and `ttp` are shorter aliases for the same command.
-towbintools-pipeline = "towbintools_pipeline.cli:main"
-tt-pipeline = "towbintools_pipeline.cli:main"
-ttp = "towbintools_pipeline.cli:main"
+align_pipeline = "align_pipeline.cli:main"
+tt-pipeline = "align_pipeline.cli:main"
+ttp = "align_pipeline.cli:main"
 
 [tool.setuptools]
 # The pipeline core and its workers; gui/ and training/ are not part of it.
-packages = ["towbintools_pipeline", "towbintools_pipeline.workers"]
+packages = ["align_pipeline", "align_pipeline.workers"]
 
 [tool.setuptools.package-data]
 # Ship the bundled example configs and default models with the package.
-towbintools_pipeline = ["defaults/**/*.yaml", "defaults/**/*.ckpt", "defaults/**/*.json"]
+align_pipeline = ["defaults/**/*.yaml", "defaults/**/*.ckpt", "defaults/**/*.json"]
 
 [tool.black]
 # pin the target so black's AST safety check does not depend on the

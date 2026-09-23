@@ -4,13 +4,13 @@ Everything the pipeline does is described in a single YAML configuration file.
 YAML is a human readable format: you can read it, and so can the computer. This
 page is the reference for the **general** options; the parameters of each analysis
 step are documented in the
-[building blocks](https://spsalmon.github.io/towbintools_pipeline/building-blocks/buildingblock/)
+[building blocks](https://spsalmon.github.io/align_pipeline/building-blocks/buildingblock/)
 section.
 
 Get a working configuration to start from with:
 
 ```bash
-towbintools-pipeline init-configs ~/my_configs
+align_pipeline init-configs ~/my_configs
 ```
 
 ## Experiment and outputs
@@ -48,10 +48,10 @@ The block names are `segmentation`, `straightening`, `morphology_computation`,
 | `backend` | `"slurm"` | `"slurm"` submits each step as a cluster job; `"local"` runs them one after the other on the current machine. |
 | `n_jobs` | `sbatch_cpus`, else 1 | How many images are processed in parallel inside a step. |
 | `slurm_config` | `"slurm_config.yaml"` | Path to the cluster resource file, **relative to the configuration file**. Only used with the SLURM backend. |
-| `python_command` | micromamba (SLURM) / current interpreter (local) | The command used to launch Python everywhere. Set it if you use conda or a plain virtual environment instead of micromamba, e.g. `"conda run -n towbintools python"`. |
+| `python_command` | micromamba (SLURM) / current interpreter (local) | The command used to launch Python everywhere. Set it if you use conda or a plain virtual environment instead of micromamba, e.g. `"conda run -n align_pipeline python"`. |
 
 Cluster resources (memory, CPUs, GPUs, time) live in the SLURM configuration file
-— see [running on a cluster](https://spsalmon.github.io/towbintools_pipeline/usage/runningonacluster/).
+— see [running on a cluster](https://spsalmon.github.io/align_pipeline/usage/runningonacluster/).
 
 ## Temporary files and cleanup
 
@@ -63,7 +63,7 @@ Cluster resources (memory, CPUs, GPUs, time) live in the SLURM configuration fil
 The results of a run are **never** in the temporary directory — they are in your
 experiment's analysis directory, and a full copy of the run's scratch (logs,
 configuration, provenance) is kept in the experiment as well. See
-[pipeline output](https://spsalmon.github.io/towbintools_pipeline/usage/pipelineoutput/).
+[pipeline output](https://spsalmon.github.io/align_pipeline/usage/pipelineoutput/).
 
 Point `temp_dir` at your data storage if your home directory has a small quota.
 

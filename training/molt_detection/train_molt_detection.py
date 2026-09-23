@@ -7,11 +7,11 @@ import pytorch_lightning as pl
 import pytorch_lightning.callbacks as callbacks
 import torch
 import yaml
+from align_toolbox.deep_learning.architectures import KeypointDetection1DModel
+from align_toolbox.deep_learning.utils.dataset import KeypointDetection1DTrainingDataset
+from align_toolbox.deep_learning.utils.util import create_lightweight_checkpoint
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
-from towbintools.deep_learning.architectures import KeypointDetection1DModel
-from towbintools.deep_learning.utils.dataset import KeypointDetection1DTrainingDataset
-from towbintools.deep_learning.utils.util import create_lightweight_checkpoint
 
 
 def get_args():
@@ -68,7 +68,7 @@ def check_dataset_exists(features_pickle, heatmaps_pickle, keypoints_pickle):
             "Could not find the molt detection dataset. Missing file(s):\n  "
             f"{missing_str}\n\n"
             "Gather the dataset first by running:\n"
-            "  ~/.local/bin/micromamba run -n towbintools python3 "
+            "  ~/.local/bin/micromamba run -n align_pipeline python3 "
             "get_molt_detection_data.py -c configs/molt_dataset_config.yaml\n\n"
             "and make sure this config's 'dataset_dir' (or the explicit pickle "
             "paths) matches the gathering config's 'output_dir'."

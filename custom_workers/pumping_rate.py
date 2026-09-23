@@ -6,13 +6,10 @@ import numpy as np
 import polars as pl
 import scipy
 import skimage.filters
-from joblib import Parallel
-from joblib import delayed
+from align_toolbox.foundation.file_handling import extract_time_point, write_filemap
+from align_toolbox.foundation.image_handling import normalize_image, read_tiff_file
+from joblib import Parallel, delayed
 from scipy.signal import find_peaks
-from towbintools.foundation.file_handling import extract_time_point
-from towbintools.foundation.file_handling import write_filemap
-from towbintools.foundation.image_handling import normalize_image
-from towbintools.foundation.image_handling import read_tiff_file
 from whittaker_eilers import WhittakerSmoother
 
 

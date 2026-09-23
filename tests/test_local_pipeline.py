@@ -14,7 +14,7 @@ import sys
 
 import pytest
 
-pytest.importorskip("towbintools")
+pytest.importorskip("align_toolbox")
 np = pytest.importorskip("numpy")
 tifffile = pytest.importorskip("tifffile")
 yaml = pytest.importorskip("yaml")
@@ -71,7 +71,7 @@ def _build_experiment(
 
 
 def _run_pipeline(config_path, extra_args=(), cwd=REPO_ROOT):
-    # PYTHONPATH lets `-m towbintools_pipeline...` resolve from any cwd; the
+    # PYTHONPATH lets `-m align_pipeline...` resolve from any cwd; the
     # local backend launches the workers with this same interpreter and resolves
     # their scripts by absolute path, so cwd only affects a relative temp dir.
     env = dict(os.environ, PYTHONPATH=REPO_ROOT)
@@ -79,7 +79,7 @@ def _run_pipeline(config_path, extra_args=(), cwd=REPO_ROOT):
         [
             sys.executable,
             "-m",
-            "towbintools_pipeline.init_pipeline",
+            "align_pipeline.init_pipeline",
             "-c",
             str(config_path),
             *extra_args,
@@ -108,13 +108,13 @@ def _valid_config(experiment_dir=REPO_ROOT):
 
 
 def test_validate_config_accepts_valid():
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     validate_config(_valid_config())  # must not raise
 
 
 def test_validate_config_missing_required_keys():
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     with pytest.raises(ValueError) as excinfo:
         validate_config({})
@@ -124,7 +124,7 @@ def test_validate_config_missing_required_keys():
 
 
 def test_validate_config_unknown_block():
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     config = _valid_config()
     config["building_blocks"] = ["segmentation", "not_a_block"]
@@ -133,7 +133,7 @@ def test_validate_config_unknown_block():
 
 
 def test_validate_config_classification_hint():
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     config = _valid_config()
     config["building_blocks"] = ["classification"]
@@ -142,7 +142,7 @@ def test_validate_config_classification_hint():
 
 
 def test_validate_config_list_length_mismatch():
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     # Two segmentation blocks but only enough channels for one and not the two
     # allowed lengths (1 or 2).
@@ -154,7 +154,7 @@ def test_validate_config_list_length_mismatch():
 
 
 def test_validate_config_reports_all_errors_at_once():
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     config = _valid_config()
     config["backend"] = "cluster"
@@ -167,7 +167,7 @@ def test_validate_config_reports_all_errors_at_once():
 
 
 def test_validate_config_unknown_key():
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     config = _valid_config()
     config["pixlesize"] = [0.65]  # typo of pixelsize
@@ -176,7 +176,7 @@ def test_validate_config_unknown_key():
 
 
 def test_validate_config_allows_sbatch_and_groups_keys():
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     # sbatch_* keys (merged from the slurm config) and groups are recognised.
     config = _valid_config()
@@ -186,7 +186,7 @@ def test_validate_config_allows_sbatch_and_groups_keys():
 
 
 def test_validate_config_experiment_dir_must_exist():
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     config = _valid_config(experiment_dir="/no/such/dir")
     with pytest.raises(ValueError, match="'experiment_dir' does not exist"):
@@ -194,7 +194,7 @@ def test_validate_config_experiment_dir_must_exist():
 
 
 def test_validate_config_model_path_must_exist(tmp_path):
-    from towbintools_pipeline.building_blocks import validate_config
+    from align_pipeline.building_blocks import validate_config
 
     # A model file that does not exist is rejected...
     config = _valid_config()
@@ -226,7 +226,7 @@ def test_pipeline_rejects_invalid_config(tmp_path):
 def test_parse_building_blocks_broadcast_and_select():
     # A single option value is broadcast to every block of its type; a per-block
     # list is selected positionally; a missing option falls back to its default.
-    from towbintools_pipeline.building_blocks import parse_building_blocks_config
+    from align_pipeline.building_blocks import parse_building_blocks_config
 
     config = {
         "building_blocks": ["segmentation", "segmentation", "morphology_computation"],
@@ -272,7 +272,7 @@ def _naming_config(tmp_path):
 def test_get_output_name_channels_and_raw(tmp_path):
     # Channels prefix as ch{n+1}; a raw input contributes no basename unless
     # add_raw is set. A subdir output lives under the analysis dir and is created.
-    from towbintools_pipeline.utils import get_output_name
+    from align_pipeline.utils import get_output_name
 
     config = _naming_config(tmp_path)
     seg = get_output_name(config, "raw", "seg", channels=[1, 0], add_raw=False)
@@ -287,7 +287,7 @@ def test_get_output_name_channels_and_raw(tmp_path):
 def test_get_output_name_raw_ref_with_renamed_raw_dir(tmp_path):
     # A "raw" segmentation ref must still name its output ch2_seg (not ch2_raw_seg)
     # when raw_dir_name is renamed; add_raw still forces the basename in.
-    from towbintools_pipeline.utils import get_output_name
+    from align_pipeline.utils import get_output_name
 
     config = _naming_config(tmp_path)
     config["raw_dir_name"] = "raw_subset"
@@ -301,7 +301,7 @@ def test_get_output_name_prefix_strip_and_report(tmp_path):
     # An analysis-dir-prefixed input is reduced to its basename; return_subdir
     # False yields a report file named with the report_format extension, with
     # suffix appended.
-    from towbintools_pipeline.utils import get_output_name
+    from align_pipeline.utils import get_output_name
 
     config = _naming_config(tmp_path)
     straight = get_output_name(config, "analysis/ch2_seg", "str", add_raw=True)
@@ -321,7 +321,7 @@ def test_get_output_name_prefix_strip_and_report(tmp_path):
 def test_resolve_ref():
     # Directory refs normalize to `{analysis_dir_name}/{name}` whether or not they
     # carry a prefix; raw and absolute paths pass through.
-    from towbintools_pipeline.utils import resolve_ref
+    from align_pipeline.utils import resolve_ref
 
     assert resolve_ref("ch2_seg", {}) == "analysis/ch2_seg"
     assert resolve_ref("analysis/ch2_seg", {}) == "analysis/ch2_seg"
@@ -343,7 +343,7 @@ def test_warnings_filter():
     # The curated rules suppress their targets; unrelated warnings pass through.
     import warnings
 
-    from towbintools_pipeline.warnings_filter import configure_warnings
+    from align_pipeline.warnings_filter import configure_warnings
 
     with warnings.catch_warnings(record=True) as rec:
         warnings.resetwarnings()
@@ -364,7 +364,7 @@ def test_warnings_filter():
 
 def test_process_input_output_files_rejects_bad_rows(tmp_path):
     # An empty row, or one holding a None / blank / non-string entry, is dropped.
-    from towbintools_pipeline.utils import process_input_output_files
+    from align_pipeline.utils import process_input_output_files
 
     out = str(tmp_path)
     assert process_input_output_files([], out, False) == (None, None)
@@ -376,7 +376,7 @@ def test_process_input_output_files_rejects_bad_rows(tmp_path):
 def test_process_input_output_files_rerun_and_existing(tmp_path):
     # A valid row maps to <output_dir>/<input basename>; an already-produced
     # output is skipped unless rerun is set.
-    from towbintools_pipeline.utils import process_input_output_files
+    from align_pipeline.utils import process_input_output_files
 
     out_dir = tmp_path / "out"
     out_dir.mkdir()
@@ -398,7 +398,7 @@ def test_process_input_output_files_rerun_and_existing(tmp_path):
 def test_merge_slurm_config_resolves_relative_sibling(tmp_path):
     # A relative slurm_config resolves next to the main config file; its keys
     # merge in, but inline sbatch_* keys still win.
-    from towbintools_pipeline.utils import merge_slurm_config
+    from align_pipeline.utils import merge_slurm_config
 
     (tmp_path / "slurm_config.yaml").write_text(
         "sbatch_time: 0-02:00:00\nsbatch_cpus: 8\n"
@@ -416,7 +416,7 @@ def test_merge_slurm_config_resolves_relative_sibling(tmp_path):
 
 def test_merge_slurm_config_missing_is_skipped(tmp_path):
     # A missing slurm_config is skipped, leaving the config untouched.
-    from towbintools_pipeline.utils import merge_slurm_config
+    from align_pipeline.utils import merge_slurm_config
 
     config_path = tmp_path / "config.yaml"
     config_path.write_text("backend: slurm\nslurm_config: does_not_exist.yaml\n")
@@ -429,7 +429,7 @@ def test_merge_slurm_config_missing_is_skipped(tmp_path):
 def test_resolve_block_slurm_default_and_override():
     # A block with no override gets the shared defaults; an overridden type gets
     # the defaults merged with its entry (the override winning per key).
-    from towbintools_pipeline.utils import resolve_block_slurm
+    from align_pipeline.utils import resolve_block_slurm
 
     config = {
         "sbatch_cpus": 8,
@@ -455,7 +455,7 @@ def test_resolve_block_slurm_default_and_override():
 
 def test_resolve_init_slurm():
     # The outer job gets the defaults overlaid with sbatch_init.
-    from towbintools_pipeline.utils import resolve_init_slurm
+    from align_pipeline.utils import resolve_init_slurm
 
     config = {
         "sbatch_cpus": 32,
@@ -470,7 +470,7 @@ def test_resolve_init_slurm():
 def test_resolve_init_slurm_drops_gpu():
     # The orchestrator job never needs the GPU, so it isn't inherited from the
     # shared defaults (but shared extras like --account still flow through).
-    from towbintools_pipeline.utils import resolve_init_slurm
+    from align_pipeline.utils import resolve_init_slurm
 
     config = {
         "sbatch_cpus": 32,
@@ -488,8 +488,7 @@ def test_resolve_init_slurm_drops_gpu():
 def test_slurm_extra_options_accumulate():
     # Scalar keys are replaced by a section, but sbatch_extra_options entries are
     # appended, so a cluster-wide option is never silently dropped.
-    from towbintools_pipeline.utils import resolve_block_slurm
-    from towbintools_pipeline.utils import resolve_init_slurm
+    from align_pipeline.utils import resolve_block_slurm, resolve_init_slurm
 
     config = {
         "sbatch_cpus": 32,
@@ -520,7 +519,7 @@ def test_slurm_extra_options_accumulate():
 
 def test_build_resource_directives():
     # Standard directives emitted only when set; extras appended verbatim.
-    from towbintools_pipeline.utils import build_resource_directives
+    from align_pipeline.utils import build_resource_directives
 
     assert build_resource_directives(8, "0-02:00:00", "16G", "rtx6000:1", None) == [
         "-c 8",
@@ -537,7 +536,7 @@ def test_build_resource_directives():
 
 def test_run_params_sbatch_init_flags():
     # The helper turns sbatch_init (over the defaults, minus GPU) into flags.
-    from towbintools_pipeline.run_params import sbatch_init_flags
+    from align_pipeline.run_params import sbatch_init_flags
 
     config = {
         "sbatch_cpus": 32,
@@ -561,11 +560,11 @@ def test_run_params_sbatch_init_flags():
 def test_get_python_command():
     # python_command overrides both backends; otherwise local uses the active
     # interpreter and slurm the default micromamba runner.
-    from towbintools_pipeline.utils import get_python_command
+    from align_pipeline.utils import get_python_command
 
     assert get_python_command({"backend": "local"}) == sys.executable
     assert get_python_command({"backend": "slurm"}) == (
-        "~/.local/bin/micromamba run -n towbintools python3"
+        "~/.local/bin/micromamba run -n align_pipeline python3"
     )
     assert (
         get_python_command(
@@ -587,7 +586,7 @@ def test_get_python_command():
 def test_init_pipeline_importable_without_side_effects():
     # The entry point requires the module to import without parsing args or
     # running anything; main() is the callable it points at.
-    import towbintools_pipeline.init_pipeline as ip
+    import align_pipeline.init_pipeline as ip
 
     assert callable(ip.main)
     assert callable(ip.build_blocks_for_subdir)
@@ -597,7 +596,7 @@ def test_init_pipeline_importable_without_side_effects():
 
 
 def test_get_args_positional_and_flag_config():
-    from towbintools_pipeline.init_pipeline import get_args
+    from align_pipeline.init_pipeline import get_args
 
     assert get_args(["exp.yaml"]).config == "exp.yaml"
     assert get_args(["-c", "exp.yaml"]).config == "exp.yaml"
@@ -606,15 +605,15 @@ def test_get_args_positional_and_flag_config():
 
 
 def test_get_args_requires_config():
-    from towbintools_pipeline.init_pipeline import get_args
+    from align_pipeline.init_pipeline import get_args
 
     with pytest.raises(SystemExit):
         get_args([])
 
 
 def test_cli_dispatch_routes_to_run(monkeypatch):
-    import towbintools_pipeline.cli as cli
-    import towbintools_pipeline.init_pipeline as ip
+    import align_pipeline.cli as cli
+    import align_pipeline.init_pipeline as ip
 
     calls = []
     monkeypatch.setattr(ip, "main", lambda argv=None: calls.append(argv))
@@ -625,7 +624,7 @@ def test_cli_dispatch_routes_to_run(monkeypatch):
 
 
 def test_cli_init_config_writes_configs(tmp_path):
-    import towbintools_pipeline.cli as cli
+    import align_pipeline.cli as cli
 
     cli.main(["init-configs", str(tmp_path)])
     for name in ("config.yaml", "slurm_config.yaml"):
@@ -633,7 +632,7 @@ def test_cli_init_config_writes_configs(tmp_path):
 
 
 def test_cli_init_config_non_destructive(tmp_path):
-    import towbintools_pipeline.cli as cli
+    import align_pipeline.cli as cli
 
     sentinel = tmp_path / "config.yaml"
     sentinel.write_text("keep me")
@@ -712,7 +711,7 @@ def test_concatenate_sbatch_logs(tmp_path):
     # name, without touching the originals.
     import os as _os
 
-    from towbintools_pipeline.utils import concatenate_sbatch_logs
+    from align_pipeline.utils import concatenate_sbatch_logs
 
     temp_dir = tmp_path / "pipeline_4242"
     log_dir = temp_dir / "sbatch_output"
@@ -755,7 +754,7 @@ def test_concatenate_sbatch_logs(tmp_path):
 
 def test_concatenate_sbatch_logs_without_logs(tmp_path):
     # A local run has no sbatch logs at all; that must be a quiet no-op.
-    from towbintools_pipeline.utils import concatenate_sbatch_logs
+    from align_pipeline.utils import concatenate_sbatch_logs
 
     concatenate_sbatch_logs(str(tmp_path))  # no sbatch_output dir
     (tmp_path / "sbatch_output").mkdir()
@@ -788,7 +787,7 @@ def test_local_pipeline_segmentation_and_morphology(tmp_path):
 
 
 def test_find_existing_filemap_any_extension_newest_wins(tmp_path):
-    from towbintools_pipeline.init_pipeline import find_existing_filemap
+    from align_pipeline.init_pipeline import find_existing_filemap
 
     assert find_existing_filemap(str(tmp_path), "analysis_filemap") is None
 

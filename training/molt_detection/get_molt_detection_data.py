@@ -5,11 +5,11 @@ import pickle
 import numpy as np
 import polars as pl
 import yaml
-from towbintools.data_analysis.growth_rate import (
+from align_toolbox.data_analysis.growth_rate import (
     compute_instantaneous_growth_rate_classified,
 )
-from towbintools.data_analysis.time_series import correct_series_with_classification
-from towbintools.foundation.file_handling import read_filemap
+from align_toolbox.data_analysis.time_series import correct_series_with_classification
+from align_toolbox.foundation.file_handling import read_filemap
 from tqdm import tqdm
 
 # Internal feature-engineering parameters for the instantaneous growth rate.

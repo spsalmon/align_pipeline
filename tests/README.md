@@ -7,7 +7,7 @@
 runs threshold segmentation followed by area morphology, and checks that the
 masks and the morphology report are produced.
 
-Requires an environment with the pipeline dependencies (e.g. `towbintools`,
+Requires an environment with the pipeline dependencies (e.g. `ALIGN`,
 `tifffile`, `pyyaml`). Run from the repo root:
 
 ```bash

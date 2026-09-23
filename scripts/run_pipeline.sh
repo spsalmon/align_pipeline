@@ -10,7 +10,7 @@ mkdir -p sbatch_output
 # Find the config among the forwarded arguments (same default as the pipeline),
 # so we can derive the outer job's sbatch resources from it. Read by
 # index rather than shift, so "$@" stays intact for forwarding below.
-CONFIG_FILE="./towbintools_pipeline/defaults/configs/config.yaml"
+CONFIG_FILE="./align_pipeline/defaults/configs/config.yaml"
 EXPERIMENT_DIR=""
 args=("$@")
 for ((i = 0; i < ${#args[@]}; i++)); do
@@ -33,11 +33,11 @@ for ((i = 0; i < ${#args[@]}; i++)); do
 done
 
 # Resolve the python launcher for the pre-flight and the submitted job: an
-# exported TOWBINTOOLS_PYTHON wins, else the config's python_command, else the
+# exported ALIGN_PYTHON wins, else the config's python_command, else the
 # micromamba default. Grepped (not read via python) because python is the very
 # thing we are resolving. Exported so the sbatch job inherits the same launcher.
 CONFIG_PYTHON=$(grep -E '^[[:space:]]*python_command:' "$CONFIG_FILE" 2>/dev/null | head -1 | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]]*(#.*)?$//; s/^["'\'']//; s/["'\'']$//')
-export TOWBINTOOLS_PYTHON="${TOWBINTOOLS_PYTHON:-${CONFIG_PYTHON:-$HOME/.local/bin/micromamba run -n towbintools python3}}"
+export ALIGN_PYTHON="${ALIGN_PYTHON:-${CONFIG_PYTHON:-$HOME/.local/bin/micromamba run -n align_pipeline python3}}"
 
 # Validate the config here on the login node so a bad one fails fast with the
 # error on the terminal, instead of costing a job submission and surfacing in the
@@ -45,13 +45,13 @@ export TOWBINTOOLS_PYTHON="${TOWBINTOOLS_PYTHON:-${CONFIG_PYTHON:-$HOME/.local/b
 # dir the run will. The pipeline still validates again inside the job.
 VALIDATE_ARGS=(-c "$CONFIG_FILE")
 [ -n "$EXPERIMENT_DIR" ] && VALIDATE_ARGS+=(-e "$EXPERIMENT_DIR")
-if ! $TOWBINTOOLS_PYTHON -m towbintools_pipeline.run_params --validate "${VALIDATE_ARGS[@]}"; then
+if ! $ALIGN_PYTHON -m align_pipeline.run_params --validate "${VALIDATE_ARGS[@]}"; then
     exit 1
 fi
 
 # Config-drive the outer job's sbatch resources from sbatch_init. If this yields
 # nothing (e.g. non-slurm config), sbatch falls back to the header in the script.
-SBATCH_INIT_FLAGS=$($TOWBINTOOLS_PYTHON -m towbintools_pipeline.run_params --sbatch-init -c "$CONFIG_FILE" 2>/dev/null)
+SBATCH_INIT_FLAGS=$($ALIGN_PYTHON -m align_pipeline.run_params --sbatch-init -c "$CONFIG_FILE" 2>/dev/null)
 
 # Pass the resource flags and the forwarded arguments to the SBATCH script.
 sbatch $SBATCH_INIT_FLAGS scripts/_init_pipeline.sh "$@"

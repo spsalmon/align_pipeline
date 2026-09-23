@@ -1,6 +1,6 @@
 # Configuration for training the molt detection model.
 # Run with:
-#   cd ~/towbintools_pipeline/training/molt_detection
+#   cd ~/align_pipeline/training/molt_detection
 #   bash run_training.sh -c configs/molt_training_config.yaml
 
 # Dataset produced by get_molt_detection_data.py. Either point at the directory

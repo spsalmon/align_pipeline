@@ -74,7 +74,7 @@ This step walks the whole storage cluster and reads many filemaps, so it is subm
 a SLURM job:
 
 ```bash
-cd ~/towbintools_pipeline/training/molt_detection
+cd ~/align_pipeline/training/molt_detection
 bash run_gather_dataset.sh -c configs/molt_dataset_config.yaml
 ```
 
@@ -146,7 +146,7 @@ random_state: 42
 Once your configuration is finished, submit the training as a SLURM job:
 
 ```bash
-cd ~/towbintools_pipeline/training/molt_detection
+cd ~/align_pipeline/training/molt_detection
 bash run_training.sh -c configs/molt_training_config.yaml
 ```
 
@@ -166,9 +166,9 @@ molt_detection_columns: [["ch2_seg_str_volume"]]
 ```
 
 The default checkpoint shipped with the pipeline lives inside the package, at
-`towbintools_pipeline/defaults/models/molt_detection_model.ckpt`, and is used when
+`align_pipeline/defaults/models/molt_detection_model.ckpt`, and is used when
 `molt_detection_model_path` is left unset. See the
-[Molt Detection building block](https://spsalmon.github.io/towbintools_pipeline/building-blocks/moltdetection)
+[Molt Detection building block](https://spsalmon.github.io/align_pipeline/building-blocks/moltdetection)
 documentation for the full list of options.
 
 The two notebooks in `training/molt_detection/utils/` help you inspect the gathered

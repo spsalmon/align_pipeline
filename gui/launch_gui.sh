@@ -11,7 +11,7 @@ PORT=0             # 0 = random available port
 HOST="127.0.0.1"
 # ---------------------------------
 
-${TOWBINTOOLS_PYTHON:-$HOME/.local/bin/micromamba run -n towbintools python3} "./gui/run.py" \
+${ALIGN_PYTHON:-$HOME/.local/bin/micromamba run -n align_pipeline python3} "./gui/run.py" \
     ${FILEMAP_PATH:+--filemap "$FILEMAP_PATH"} \
     ${RECOMPUTE_VALUES_AT_MOLT:+$([ "$RECOMPUTE_VALUES_AT_MOLT" = "1" ] && echo "--recompute")} \
     $([ "$OPEN_ANNOTATED" = "0" ] && echo "--no-annotated") \

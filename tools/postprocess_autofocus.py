@@ -3,14 +3,12 @@ import os
 
 import numpy as np
 import ome_types
+from align_toolbox.foundation.image_handling import read_tiff_file
+from align_toolbox.foundation.zstack import find_best_plane
 from bioio import BioImage
 from bioio_ome_tiff.writers import OmeTiffWriter
-from joblib import Parallel
-from joblib import delayed
-from ome_types.model import Image
-from ome_types.model import Pixels
-from towbintools.foundation.image_handling import read_tiff_file
-from towbintools.foundation.zstack import find_best_plane
+from joblib import Parallel, delayed
+from ome_types.model import Image, Pixels
 from tqdm import tqdm
 
 

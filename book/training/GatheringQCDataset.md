@@ -112,9 +112,9 @@ This step reads many filemaps across the cluster, so it is submitted as a SLURM
 job:
 
 ```bash
-cd ~/towbintools_pipeline/training/classification
+cd ~/align_pipeline/training/classification
 bash run_gather_dataset.sh -c configs/qc_dataset_config.yaml
 ```
 
 The output dataset directory is what you point the training step at. See
-[training a quality control model](https://spsalmon.github.io/towbintools_pipeline/training/trainingqcmodels).
+[training a quality control model](https://spsalmon.github.io/align_pipeline/training/trainingqcmodels).

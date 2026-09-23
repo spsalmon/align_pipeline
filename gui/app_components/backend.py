@@ -3,12 +3,11 @@ import re
 
 import numpy as np
 import polars as pl
-from towbintools.data_analysis import compute_series_at_time_classified
-from towbintools.foundation import image_handling
-from towbintools.foundation.file_handling import read_filemap
-from towbintools.foundation.file_handling import write_filemap
-from towbintools.foundation.utils import find_best_string_match
-from towbintools.foundation.worm_features import get_features_to_compute_at_molt
+from align_toolbox.data_analysis import compute_series_at_time_classified
+from align_toolbox.foundation import image_handling
+from align_toolbox.foundation.file_handling import read_filemap, write_filemap
+from align_toolbox.foundation.utils import find_best_string_match
+from align_toolbox.foundation.worm_features import get_features_to_compute_at_molt
 
 # constant definitions
 FEATURES_TO_COMPUTE_AT_MOLT = get_features_to_compute_at_molt()

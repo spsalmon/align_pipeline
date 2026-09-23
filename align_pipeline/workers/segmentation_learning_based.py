@@ -6,23 +6,23 @@ from threading import Thread
 import cv2
 import numpy as np
 import torch
-from cv2 import resize
-from joblib import Parallel
-from joblib import delayed
-from joblib import parallel_config
-from tifffile import imwrite
-from torch.utils.data import DataLoader
-from towbintools.deep_learning.deep_learning_tools import (
+from align_toolbox.deep_learning.deep_learning_tools import (
     load_segmentation_model_from_checkpoint,
 )
-from towbintools.deep_learning.utils.augmentation import (
+from align_toolbox.deep_learning.utils.augmentation import (
     get_prediction_augmentation_from_model,
 )
-from towbintools.deep_learning.utils.dataset import SegmentationPredictionDataset
-from towbintools.deep_learning.utils.dataset import StackPredictionDataset
-from towbintools.foundation import image_handling
+from align_toolbox.deep_learning.utils.dataset import (
+    SegmentationPredictionDataset,
+    StackPredictionDataset,
+)
+from align_toolbox.foundation import image_handling
+from cv2 import resize
+from joblib import Parallel, delayed, parallel_config
+from tifffile import imwrite
+from torch.utils.data import DataLoader
 
-from towbintools_pipeline import utils
+from align_pipeline import utils
 
 logging.basicConfig(level=logging.INFO)
 

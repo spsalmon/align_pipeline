@@ -1,12 +1,12 @@
 # Training Quality Control Models
 
 Once you have a labelled QC dataset (see
-[gathering a quality control dataset](https://spsalmon.github.io/towbintools_pipeline/training/gatheringqcdataset)),
+[gathering a quality control dataset](https://spsalmon.github.io/align_pipeline/training/gatheringqcdataset)),
 `train_qc_xgb_model.py` trains an **XGBoost** classifier that labels each
 segmented worm as a valid worm, an egg, or an error.
 
 The script computes shape/intensity features for every annotated image with
-`compute_qc_features` (from the `towbintools` library), optionally tunes the
+`compute_qc_features` (from the `ALIGN` library), optionally tunes the
 XGBoost hyperparameters with Bayesian optimization, fits the model with
 balanced class weights, and saves a small model bundle that the pipeline's
 `quality_control` block consumes.
@@ -79,7 +79,7 @@ random_state: 42
 XGBoost training and the Bayesian search are CPU-only, so no GPU is requested:
 
 ```bash
-cd ~/towbintools_pipeline/training/classification
+cd ~/align_pipeline/training/classification
 bash run_training.sh -c configs/qc_training_config.yaml
 ```
 
@@ -103,12 +103,12 @@ qc_model_path: [ "/path/to/qc_xgb_model.pkl" ]
 
 There is no separate "method" option: the block always loads the joblib
 bundle at `qc_model_path` and uses whichever classifier(s) it points to. See
-`OPTIONS_MAP["quality_control"]` in `towbintools_pipeline/building_blocks.py` for
+`OPTIONS_MAP["quality_control"]` in `align_pipeline/building_blocks.py` for
 the full list of accepted keys (`qc_masks`, `qc_images`, `qc_model_path`,
 `qc_import_eggs_from`, `rerun_quality_control`).
 
 The default checkpoints shipped with the pipeline live under
-`towbintools_pipeline/defaults/models/10x_body_qc/` and
-`towbintools_pipeline/defaults/models/10x_pharynx_qc/`. See the
-[Quality Control building block](https://spsalmon.github.io/towbintools_pipeline/building-blocks/qualitycontrol)
+`align_pipeline/defaults/models/10x_body_qc/` and
+`align_pipeline/defaults/models/10x_pharynx_qc/`. See the
+[Quality Control building block](https://spsalmon.github.io/align_pipeline/building-blocks/qualitycontrol)
 documentation for the full list of options.

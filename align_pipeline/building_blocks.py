@@ -5,19 +5,20 @@ configurations, and builds the block objects that init_pipeline runs.
 """
 
 import os
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 import numpy as np
-from towbintools.foundation.file_handling import add_dir_to_experiment_filemap
+from align_toolbox.foundation.file_handling import add_dir_to_experiment_filemap
 
-from towbintools_pipeline.utils import create_linker_command
-from towbintools_pipeline.utils import get_input_and_output_files
-from towbintools_pipeline.utils import get_output_name
-from towbintools_pipeline.utils import get_python_command
-from towbintools_pipeline.utils import pickle_objects
-from towbintools_pipeline.utils import resolve_ref
-from towbintools_pipeline.utils import run_command
+from align_pipeline.utils import (
+    create_linker_command,
+    get_input_and_output_files,
+    get_output_name,
+    get_python_command,
+    pickle_objects,
+    resolve_ref,
+    run_command,
+)
 
 # Resolve bundled scripts/models relative to this package, so the pipeline
 # works regardless of the current working directory.
@@ -400,10 +401,10 @@ class SegmentationBuildingBlock(BuildingBlock):
 
         if block_config["segmentation_method"] in NON_LEARNING_METHODS:
             requires_gpu = False
-            worker_module = "towbintools_pipeline.workers.segmentation_non_learning"
+            worker_module = "align_pipeline.workers.segmentation_non_learning"
         elif block_config["segmentation_method"] in LEARNING_BASED_METHODS:
             requires_gpu = True
-            worker_module = "towbintools_pipeline.workers.segmentation_learning_based"
+            worker_module = "align_pipeline.workers.segmentation_learning_based"
         else:
             raise ValueError(
                 f"Segmentation method {block_config['segmentation_method']} not supported."
@@ -443,7 +444,7 @@ class SegmentationBuildingBlock(BuildingBlock):
 
 class StraighteningBuildingBlock(BuildingBlock):
     def __init__(self, block_config):
-        worker_module = "towbintools_pipeline.workers.straightening"
+        worker_module = "align_pipeline.workers.straightening"
         super().__init__(
             "straightening",
             OPTIONS_MAP["straightening"],
@@ -504,7 +505,7 @@ class StraighteningBuildingBlock(BuildingBlock):
 
 class QualityControlBuildingBlock(BuildingBlock):
     def __init__(self, block_config):
-        worker_module = "towbintools_pipeline.workers.quality_control"
+        worker_module = "align_pipeline.workers.quality_control"
         super().__init__(
             "quality_control",
             OPTIONS_MAP["quality_control"],
@@ -560,7 +561,7 @@ class QualityControlBuildingBlock(BuildingBlock):
 
 class MorphologyComputationBuildingBlock(BuildingBlock):
     def __init__(self, block_config):
-        worker_module = "towbintools_pipeline.workers.morphology_computation"
+        worker_module = "align_pipeline.workers.morphology_computation"
         super().__init__(
             "morphology_computation",
             OPTIONS_MAP["morphology_computation"],
@@ -597,7 +598,7 @@ class MorphologyComputationBuildingBlock(BuildingBlock):
 
 class MoltDetectionBuildingBlock(BuildingBlock):
     def __init__(self, block_config):
-        worker_module = "towbintools_pipeline.workers.molt_detection"
+        worker_module = "align_pipeline.workers.molt_detection"
         super().__init__(
             "molt_detection",
             OPTIONS_MAP["molt_detection"],
@@ -617,7 +618,7 @@ class MoltDetectionBuildingBlock(BuildingBlock):
 
 class FluorescenceQuantificationBuildingBlock(BuildingBlock):
     def __init__(self, block_config):
-        worker_module = "towbintools_pipeline.workers.fluorescence_quantification"
+        worker_module = "align_pipeline.workers.fluorescence_quantification"
         super().__init__(
             "fluorescence_quantification",
             OPTIONS_MAP["fluorescence_quantification"],

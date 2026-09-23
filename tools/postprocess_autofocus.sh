@@ -10,4 +10,4 @@ INPUT_DIR="/mnt/towbin.data/shared/spradhan/20250929_embryogenesis_316_0uM_500uM
 OUTPUT_DIR="/mnt/towbin.data/shared/spradhan/20250929_embryogenesis_316_0uM_500uM_P0_20x_Orca_III/raw_best_plane/"
 CHANNEL=0
 
-~/.local/bin/micromamba run -n towbintools python3 postprocess_autofocus.py --input-dir "$INPUT_DIR" --output-dir "$OUTPUT_DIR" --channel "$CHANNEL"
+~/.local/bin/micromamba run -n align_pipeline python3 postprocess_autofocus.py --input-dir "$INPUT_DIR" --output-dir "$OUTPUT_DIR" --channel "$CHANNEL"

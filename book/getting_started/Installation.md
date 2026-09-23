@@ -15,7 +15,7 @@ Both give you the same pipeline. Pick one.
 
 ```bash
 cd
-git clone https://github.com/spsalmon/towbintools_pipeline.git
+git clone https://github.com/spsalmon/align_pipeline.git
 ```
 
 2. Install micromamba. **BE CAREFUL, THE PIPELINE EXPECTS YOU TO CHOOSE THE BASE
@@ -30,16 +30,16 @@ source ~/.bashrc
 3. Run the installation script:
 
 ```bash
-cd ~/towbintools_pipeline
+cd ~/align_pipeline
 bash scripts/install_pipeline.sh
 ```
 
-This creates a micromamba environment called `towbintools` containing all the
+This creates a micromamba environment called `ALIGN` containing all the
 required packages, and registers the pipeline itself inside it so that it can be
 run from anywhere.
 
-That's it. Head to [running your first pipeline](https://spsalmon.github.io/towbintools_pipeline/getting-started/runningfirstpipeline/),
-or read how to [update the pipeline](https://spsalmon.github.io/towbintools_pipeline/getting-started/update/).
+That's it. Head to [running your first pipeline](https://spsalmon.github.io/align_pipeline/getting-started/runningfirstpipeline/),
+or read how to [update the pipeline](https://spsalmon.github.io/align_pipeline/getting-started/update/).
 
 ## On your own machine
 
@@ -51,28 +51,28 @@ operating system. It does not need micromamba and does not need a cluster.
 2. Run the local installation script:
 
 ```bash
-cd ~/towbintools_pipeline
+cd ~/align_pipeline
 bash scripts/install_pipeline_local.sh
 ```
 
 3. Activate the environment:
 
 ```bash
-conda activate towbintools_local
+conda activate align_pipeline_local
 ```
 
 If you prefer to do it by hand, the script is equivalent to:
 
 ```bash
-cd ~/towbintools_pipeline
+cd ~/align_pipeline
 conda env create -f env/environment_local.yml
-conda activate towbintools_local
+conda activate align_pipeline_local
 pip install -e ".[dev]"
 ```
 
 When running on your own machine, set `backend: "local"` in your configuration
 so the pipeline runs the blocks one after the other instead of submitting them
-to SLURM. See [configuration](https://spsalmon.github.io/towbintools_pipeline/usage/configuration/).
+to SLURM. See [configuration](https://spsalmon.github.io/align_pipeline/usage/configuration/).
 
 ## Windows
 
@@ -102,7 +102,7 @@ you run the commands from a bash shell (Git Bash).
 Once the environment is active, this should print the available commands:
 
 ```bash
-towbintools-pipeline
+align_pipeline
 ```
 
 `tt-pipeline` and `ttp` are shorter names for exactly the same command.

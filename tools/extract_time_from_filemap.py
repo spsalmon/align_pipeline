@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.append(str(Path(__file__).parent.parent))
-from towbintools_pipeline.utils import get_experiment_time_from_filemap  # noqa: E402
+from align_pipeline.utils import get_experiment_time_from_filemap  # noqa: E402
 
 if __name__ == "__main__":
     experiment_path = (

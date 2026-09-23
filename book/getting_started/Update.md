@@ -9,7 +9,7 @@ A script does everything described below. To update the pipeline:
 2. Run the update script:
 
 ```bash
-cd ~/towbintools_pipeline # (or wherever you installed the pipeline)
+cd ~/align_pipeline # (or wherever you installed the pipeline)
 bash scripts/update_pipeline.sh
 ```
 
@@ -54,19 +54,19 @@ same as what was tested during development. To update your environment according
 to the lock file, run:
 
 ```bash
-cd ~/towbintools_pipeline
-micromamba run -n towbintools conda-lock install --name towbintools ./env/conda-lock.yml
+cd ~/align_pipeline
+micromamba run -n align_pipeline conda-lock install --name align_pipeline ./env/conda-lock.yml
 ```
 
 Finally, the pipeline package itself is registered in the fresh environment:
 
 ```bash
-micromamba run -n towbintools pip install -e . --no-deps
+micromamba run -n align_pipeline pip install -e . --no-deps
 ```
 
 This last step is only needed when the environment was rebuilt. The pipeline is
 installed in "editable" mode, which means it always follows the files in your
-`towbintools_pipeline` folder — a `--pipeline-only` update therefore needs
+`align_pipeline` folder — a `--pipeline-only` update therefore needs
 nothing more than the `git` step.
 
 ## Troubleshooting
@@ -75,16 +75,16 @@ If for some reason you end up with a broken environment, you can always delete i
 and create it again. To do so, run:
 
 ```bash
-micromamba env remove -n towbintools
-cd ~/towbintools_pipeline
+micromamba env remove -n align_pipeline
+cd ~/align_pipeline
 bash scripts/install_pipeline.sh
 ```
 
-You may also want to update the towbintools package itself manually. To do so,
+You may also want to update the ALIGN package itself manually. To do so,
 run:
 
 ```bash
-micromamba run -n towbintools pip install -U towbintools
+micromamba run -n align_pipeline pip install -U align_toolbox
 ```
 
 ## Updating a local install
@@ -92,8 +92,8 @@ micromamba run -n towbintools pip install -U towbintools
 On a local (conda) install, update the repository and reinstall the package:
 
 ```bash
-cd ~/towbintools_pipeline
+cd ~/align_pipeline
 git pull
-conda activate towbintools_local
+conda activate align_pipeline_local
 pip install -e ".[dev]"
 ```

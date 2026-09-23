@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Build the `towbintools` environment WITHOUT ever mutating the live env folder.
+# Build the `align_pipeline` environment WITHOUT ever mutating the live env folder.
 #
 # Why this exists:
 #   `micromamba create/install` updates the env folder IN PLACE. When it has to
@@ -11,16 +11,16 @@ set -euo pipefail
 #
 # How this avoids it:
 #   Every build goes into a brand-new, never-busy, timestamped prefix
-#   (envs/towbintools_<timestamp>). A stable `envs/towbintools` SYMLINK is then
-#   flipped to point at it. micromamba resolves `-n towbintools` through the
-#   symlink, so all the hardcoded `micromamba run -n towbintools ...` calls keep
+#   (envs/align_pipeline_<timestamp>). A stable `envs/align_pipeline` SYMLINK is then
+#   flipped to point at it. micromamba resolves `-n align_pipeline` through the
+#   symlink, so all the hardcoded `micromamba run -n align_pipeline ...` calls keep
 #   working. A failed build leaves the previous env untouched, and busy files in
 #   old versions are never in the deletion path of an update.
 #
 # Usage: build_env.sh            (build fresh + switch over)
 
 MAMBA="$HOME/.local/bin/micromamba"
-ENV_NAME=towbintools
+ENV_NAME=align_pipeline
 LOCK_FILE="$(cd "$(dirname "$0")" && pwd)/conda-linux-64.lock"
 
 ROOT="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}"
@@ -45,7 +45,7 @@ rm -f "$TEMP_PIP_REQS"
 # --- Register the Jupyter kernel from the NEW prefix ----------------------------
 "$MAMBA" run -p "$NEW" python -m ipykernel install --user --name="$ENV_NAME"
 
-# --- Atomically switch `towbintools` over to the new prefix ---------------------
+# --- Atomically switch `align_pipeline` over to the new prefix ---------------------
 if [ -L "$STABLE" ]; then
     # Already a symlink: flip it atomically (create temp link, rename over).
     ln -sfn "$NEW" "${STABLE}.tmp"

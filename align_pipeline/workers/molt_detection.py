@@ -5,27 +5,28 @@ import numpy as np
 import pandas as pd
 import polars as pl
 import torch
-from joblib import Parallel
-from joblib import delayed
-from joblib import parallel_config
-from torch.utils.data import DataLoader
-from towbintools.data_analysis import compute_instantaneous_growth_rate_classified
-from towbintools.data_analysis import compute_series_at_time_classified
-from towbintools.data_analysis import correct_series_with_classification
-from towbintools.deep_learning.deep_learning_tools import (
+from align_toolbox.data_analysis import (
+    compute_instantaneous_growth_rate_classified,
+    compute_series_at_time_classified,
+    correct_series_with_classification,
+)
+from align_toolbox.deep_learning.deep_learning_tools import (
     load_keypoint_detection_model_from_checkpoint,
 )
-from towbintools.deep_learning.utils.dataset import KeypointDetection1DPredictionDataset
-from towbintools.foundation import detect_molts
-from towbintools.foundation.detect_molts import find_hatch_time
-from towbintools.foundation.file_handling import read_filemap
-from towbintools.foundation.file_handling import write_filemap
-from towbintools.foundation.keypoint_detection import heatmap_to_keypoints_1D
-from towbintools.foundation.utils import find_best_string_match
-from towbintools.foundation.worm_features import get_features_to_compute_at_molt
+from align_toolbox.deep_learning.utils.dataset import (
+    KeypointDetection1DPredictionDataset,
+)
+from align_toolbox.foundation import detect_molts
+from align_toolbox.foundation.detect_molts import find_hatch_time
+from align_toolbox.foundation.file_handling import read_filemap, write_filemap
+from align_toolbox.foundation.keypoint_detection import heatmap_to_keypoints_1D
+from align_toolbox.foundation.utils import find_best_string_match
+from align_toolbox.foundation.worm_features import get_features_to_compute_at_molt
+from joblib import Parallel, delayed, parallel_config
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from towbintools_pipeline import utils
+from align_pipeline import utils
 
 FEATURES_TO_COMPUTE_AT_MOLT = get_features_to_compute_at_molt()
 

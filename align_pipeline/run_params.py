@@ -9,10 +9,12 @@ import sys
 
 import yaml
 
-from towbintools_pipeline.building_blocks import validate_config
-from towbintools_pipeline.utils import build_resource_directives
-from towbintools_pipeline.utils import merge_slurm_config
-from towbintools_pipeline.utils import resolve_init_slurm
+from align_pipeline.building_blocks import validate_config
+from align_pipeline.utils import (
+    build_resource_directives,
+    merge_slurm_config,
+    resolve_init_slurm,
+)
 
 
 def get_args():

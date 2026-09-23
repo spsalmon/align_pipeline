@@ -2,13 +2,13 @@
 # core locally (Windows/Linux/macOS). Two steps, from the repo root:
 #
 #   conda env create -f env/environment_local.yml
-#   conda activate towbintools_local
+#   conda activate align_pipeline_local
 #   pip install -e ".[dev]"     # installs the pipeline + deps from pyproject.toml
 #
 # Dependencies live in pyproject.toml (single source of truth); this file only
 # provides the base interpreter. The cluster/micromamba install
 # (install_pipeline.sh + conda-lock) is unchanged.
-name: towbintools_local
+name: align_pipeline_local
 channels:
   - conda-forge
 dependencies:

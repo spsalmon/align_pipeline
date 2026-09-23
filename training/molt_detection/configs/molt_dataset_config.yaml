@@ -1,6 +1,6 @@
 # Configuration for gathering the molt detection training dataset.
 # Run with:
-#   ~/.local/bin/micromamba run -n towbintools python3 get_molt_detection_data.py -c configs/molt_dataset_config.yaml
+#   ~/.local/bin/micromamba run -n align_pipeline python3 get_molt_detection_data.py -c configs/molt_dataset_config.yaml
 
 # Where to look for annotated experiments on the storage cluster.
 storage_cluster_path: "/mnt/towbin.data/shared"

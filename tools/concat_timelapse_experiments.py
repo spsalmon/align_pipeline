@@ -3,9 +3,8 @@ import re
 import shutil
 
 import pandas as pd
-from joblib import Parallel
-from joblib import delayed
-from towbintools.foundation.file_handling import get_dir_filemap
+from align_toolbox.foundation.file_handling import get_dir_filemap
+from joblib import Parallel, delayed
 from tqdm import tqdm
 
 experiment_dir = "/mnt/towbin.data/shared/spsalmon/20240524_161257_273_LIPSI_40x_397_405_no_crash/analysis/nuclei_types"

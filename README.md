@@ -1,21 +1,21 @@
-# TOWBINTOOLS PIPELINE
+# ALIGN
 
-Towbintools Pipeline is a pipeline for processing and analyzing time lapse microscopy experiments. It implements many of the functions present in the towbintools package and bundles them with a pipelining tool to easily and reproducibly process large experiments.
+ALIGN (Automated Longitudinal Image-based Growth aNalyzer) is a pipeline for processing and analyzing time lapse microscopy experiments. It implements many of the functions present in the ALIGN package and bundles them with a pipelining tool to easily and reproducibly process large longitudinal experiments.
 
-A detailed documentation of the pipeline can be found here : <https://spsalmon.github.io/towbintools_pipeline/>
-The documentation for the package used as a backbone for the pipeline can be found here : <https://towbintools.readthedocs.io/en/latest/towbintools.html>
+A detailed documentation of the pipeline can be found here : <https://spsalmon.github.io/align_pipeline/>
+The documentation for the package used as a backbone for the pipeline can be found here : <https://align-toolbox.readthedocs.io/en/latest/align_toolbox.html>
 
 ## RTFM
 
 ## How to install ?
 
-You will find detailed explanations on how to install, update and use the pipeline here : <https://spsalmon.github.io/towbintools_pipeline/getting-started/installation/>
+You will find detailed explanations on how to install, update and use the pipeline here : <https://spsalmon.github.io/align_pipeline/getting-started/installation/>
 
 Short version, on a cluster:
 
 ```bash
-git clone https://github.com/spsalmon/towbintools_pipeline.git
-cd towbintools_pipeline
+git clone https://github.com/spsalmon/align_pipeline.git
+cd align_pipeline
 bash scripts/install_pipeline.sh
 ```
 
@@ -23,17 +23,17 @@ On your own machine (conda, no cluster needed):
 
 ```bash
 bash scripts/install_pipeline_local.sh
-conda activate towbintools_local
+conda activate align_pipeline_local
 ```
 
 ## Running the pipeline
 
-You will find a detailed explanation on how to run the pipeline here : <https://spsalmon.github.io/towbintools_pipeline/getting-started/runningfirstpipeline/>
+You will find a detailed explanation on how to run the pipeline here : <https://spsalmon.github.io/align_pipeline/getting-started/runningfirstpipeline/>
 
 Short version:
 
 ```bash
-towbintools-pipeline init-configs ~/my_configs   # get a config to start from
+align_pipeline init-configs ~/my_configs   # get a config to start from
 # edit ~/my_configs/config.yaml
 bash scripts/run_pipeline.sh -c ~/my_configs/config.yaml
 ```
@@ -41,12 +41,12 @@ bash scripts/run_pipeline.sh -c ~/my_configs/config.yaml
 Without a cluster, set `backend: "local"` in the config and run it directly:
 
 ```bash
-towbintools-pipeline run ~/my_configs/config.yaml
+align_pipeline run ~/my_configs/config.yaml
 ```
 
 ## Updating the pipeline
 
-You will find a detailed explanation on how to update the pipeline here : <https://spsalmon.github.io/towbintools_pipeline/getting-started/update/>
+You will find a detailed explanation on how to update the pipeline here : <https://spsalmon.github.io/align_pipeline/getting-started/update/>
 
 ```bash
 bash scripts/update_pipeline.sh                  # code + environment
@@ -56,7 +56,7 @@ bash scripts/update_pipeline.sh --pipeline-only  # code only, much faster
 ## What is in this repository
 
 ```
-towbintools_pipeline/   The pipeline itself (installable python package)
+align_pipeline/   The pipeline itself (installable python package)
   workers/                one worker per analysis step
   defaults/               bundled example configs + default models
 scripts/                Operate the pipeline: install, update, run, cleanup
@@ -73,8 +73,8 @@ tests/                  Automated tests
 
 The four things to know:
 
-- **`towbintools_pipeline/`** is the pipeline. It is installed as a package, so
-  the `towbintools-pipeline` command works from any directory.
+- **`align_pipeline/`** is the pipeline. It is installed as a package, so
+  the `align_pipeline` command works from any directory.
 - **`scripts/` and `env/`** are the glue that installs and runs it. `env/` builds
   the environment, `scripts/` operates the pipeline.
 - **`gui/`, `training/`, `tools/`** are extras, each with its own launch scripts.

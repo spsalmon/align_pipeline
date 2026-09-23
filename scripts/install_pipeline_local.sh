@@ -7,6 +7,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 conda env create -f env/environment_local.yml
-conda run -n towbintools_local pip install -e ".[dev]"
+conda run -n align_pipeline_local pip install -e ".[dev]"
 
-echo ">> Done. Activate with: conda activate towbintools_local"
+echo ">> Done. Activate with: conda activate align_pipeline_local"

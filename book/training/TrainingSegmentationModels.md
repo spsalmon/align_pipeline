@@ -4,20 +4,20 @@ Once again, this is configured through a YAML configuration file. You will find 
 
 ```yaml
 training_dataframes:
-  - '/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/towbintools_paper/germline/training_dataframe.csv'
+  - '/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/align/germline/training_dataframe.csv'
 
 validation_dataframes:
-  - '/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/towbintools_paper/germline/validation_dataframe.csv'
+  - '/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/align/germline/validation_dataframe.csv'
 
 test_dataframes:
-  - '/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/towbintools_paper/germline/test_dataframe.csv'
+  - '/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/align/germline/test_dataframe.csv'
 
 # if you don't have dataframes yet, you may input directories directly
 # image_directories: ["/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/datasets/chamber_segmentation/brightfield/good_images"]
 # mask_directories: ["/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/datasets/chamber_segmentation/brightfield/binarized_and_cleaned_masks"]
 
 save_dir: '/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/models/paper/germline/'
-model_name: 'towbintools_medium'
+model_name: 'align_medium'
 continue_training_from_checkpoint: null
 ```
 
@@ -86,6 +86,6 @@ train_test_split_ratio: 0.1
 Once you configuration is finished, you can run the training with the following command:
 
 ```bash
-cd ~/towbintools_pipeline/training/segmentation
+cd ~/align_pipeline/training/segmentation
 bash run_training.sh -c /path/to/your/config.yaml
 ```

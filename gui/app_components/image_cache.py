@@ -8,8 +8,8 @@ from concurrent.futures import wait as futures_wait
 
 import matplotlib
 import numpy as np
+from align_toolbox.foundation import image_handling
 from PIL import Image as PILImage
-from towbintools.foundation import image_handling
 
 
 class PointImageCache:

@@ -7,7 +7,7 @@ For the *cost* of each decision see [`TRADEOFFS.md`](TRADEOFFS.md); for the
 running notes that feed the eventual user-docs rewrite see [`DOCS_TODO.md`](DOCS_TODO.md).
 This overview file is the high-level map that ties them together. Each of the 10 themes
 below carries a **Where** link to the pull request that delivered it — a `base…target`
-diff on the `github.com/quasar1357/towbintools_pipeline`fork, reviewed and merged bottom-up.
+diff on the `github.com/quasar1357/align_pipeline`fork, reviewed and merged bottom-up.
 
 ## At a glance
 
@@ -31,8 +31,8 @@ None of this is a hard cut-over. Existing use keeps working:
   rejects genuinely broken configs.
 - **The pipeline is still launched the same way** on the cluster
   (`bash scripts/run_pipeline.sh ...`), and running it directly with
-  `python -m towbintools_pipeline.init_pipeline ...` still works — the new
-  installed `towbintools-pipeline` command is an *addition*, not a replacement.
+  `python -m align_pipeline.init_pipeline ...` still works — the new
+  installed `align_pipeline` command is an *addition*, not a replacement.
 - **Every new behaviour that could change a run is opt-in and defaults to the
   old behaviour** — the backend defaults to SLURM, an unset launcher means the
   previous micromamba command, and the end-of-run cleanup defaults to off.
@@ -47,12 +47,12 @@ through the same code path it uses on the cluster, instead of only as SLURM jobs
 **Why —** you can develop, test, debug, and demo without a cluster; this is
 the foundation that made automated testing possible at all.
 
-**Where —** [`main…feature/local-backend`](https://github.com/quasar1357/towbintools_pipeline/compare/main...feature/local-backend)
+**Where —** [`main…feature/local-backend`](https://github.com/quasar1357/align_pipeline/compare/main...feature/local-backend)
 
 ### 2. A real, installable package
 
 Installing the project from its checkout (`pip install`) now registers a
-`towbintools-pipeline` command that runs from any directory; each analysis step
+`align_pipeline` command that runs from any directory; each analysis step
 runs as a proper Python module; and the default config and model ship inside the
 package. (It is installed from the repository, not from a public index like PyPI
 — publishing there is an easy possible later step, though.)
@@ -60,7 +60,7 @@ package. (It is installed from the repository, not from a public index like PyPI
 **Why —** reproducible installs, no path/`PYTHONPATH` juggling, and something
 that can actually be distributed and onboarded.
 
-**Where —** [`…feature/packaging-entry-point`](https://github.com/quasar1357/towbintools_pipeline/compare/chore/retire-git-self-update...feature/packaging-entry-point) (then [`refactor/deployment-layout`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/packaging-entry-point...refactor/deployment-layout), [`feature/cluster-package-install`](https://github.com/quasar1357/towbintools_pipeline/compare/refactor/deployment-layout...feature/cluster-package-install))
+**Where —** [`…feature/packaging-entry-point`](https://github.com/quasar1357/align_pipeline/compare/chore/retire-git-self-update...feature/packaging-entry-point) (then [`refactor/deployment-layout`](https://github.com/quasar1357/align_pipeline/compare/feature/packaging-entry-point...refactor/deployment-layout), [`feature/cluster-package-install`](https://github.com/quasar1357/align_pipeline/compare/refactor/deployment-layout...feature/cluster-package-install))
 
 ### 3. Not tied to one environment manager
 
@@ -72,7 +72,7 @@ local installer that needs no micromamba.
 **Why —** teams can use conda, venv, micromamba — whatever they have — and new
 users get a much simpler setup.
 
-**Where —** [`…feature/launcher-decoupling`](https://github.com/quasar1357/towbintools_pipeline/compare/refactor/script-responsibilities...feature/launcher-decoupling) (the micromamba-free local install env first landed in [`feature/env-install`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/local-backend...feature/env-install))
+**Where —** [`…feature/launcher-decoupling`](https://github.com/quasar1357/align_pipeline/compare/refactor/script-responsibilities...feature/launcher-decoupling) (the micromamba-free local install env first landed in [`feature/env-install`](https://github.com/quasar1357/align_pipeline/compare/feature/local-backend...feature/env-install))
 
 ### 4. Adapt to a new cluster by editing config, not code
 
@@ -84,7 +84,7 @@ partitions) that previously required editing the code.
 **Why —** moving to a different cluster, or changing account/partition/memory, is now
 a change to a user file (the SLURM config) — and does not require edits to the pipeline code.
 
-**Where —** [`…feature/slurm-config`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/env-install...feature/slurm-config) (then [`feature/slurm-per-block`](https://github.com/quasar1357/towbintools_pipeline/compare/fix/config-loading-and-backup...feature/slurm-per-block), [`feature/slurm-outer-script`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/slurm-per-block...feature/slurm-outer-script))
+**Where —** [`…feature/slurm-config`](https://github.com/quasar1357/align_pipeline/compare/feature/env-install...feature/slurm-config) (then [`feature/slurm-per-block`](https://github.com/quasar1357/align_pipeline/compare/fix/config-loading-and-backup...feature/slurm-per-block), [`feature/slurm-outer-script`](https://github.com/quasar1357/align_pipeline/compare/feature/slurm-per-block...feature/slurm-outer-script))
 
 ### 5. Simpler, less error-prone configuration
 
@@ -95,7 +95,7 @@ output directory; the shipped default config carries commented examples for the 
 
 **Why —** less repetition and fewer foot-guns when writing a config.
 
-**Where —** [`…feature/folder-ref-decoupling`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/cleanup-on-success...feature/folder-ref-decoupling)
+**Where —** [`…feature/folder-ref-decoupling`](https://github.com/quasar1357/align_pipeline/compare/feature/cleanup-on-success...feature/folder-ref-decoupling)
 
 ### 6. Fail fast on a bad config
 
@@ -106,7 +106,7 @@ anything is created, reporting **all** the problems at once.
 **Why —** mistakes are caught in seconds with clear messages, and there are no
 half-started runs to clean up.
 
-**Where —** [`…feature/config-validation-ci`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/folder-ref-decoupling...feature/config-validation-ci) (commit `821f9c4`)
+**Where —** [`…feature/config-validation-ci`](https://github.com/quasar1357/align_pipeline/compare/feature/folder-ref-decoupling...feature/config-validation-ci) (commit `821f9c4`)
 
 ### 7. Run isolation and provenance
 
@@ -118,7 +118,7 @@ directory), can be provided by a CLI falg or a config entry.
 
 **Why —** clarity, reproducibility and flexibility in the outputs the pipeline generates.
 
-**Where —** [`…feature/externalize-io`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/slurm-config...feature/externalize-io) (then [`chore/cleanup-and-temp-default`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/slurm-outer-script...chore/cleanup-and-temp-default), [`fix/config-loading-and-backup`](https://github.com/quasar1357/towbintools_pipeline/compare/refactor/repo-structure...fix/config-loading-and-backup), [`feature/cleanup-on-success`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/cluster-package-install...feature/cleanup-on-success))
+**Where —** [`…feature/externalize-io`](https://github.com/quasar1357/align_pipeline/compare/feature/slurm-config...feature/externalize-io) (then [`chore/cleanup-and-temp-default`](https://github.com/quasar1357/align_pipeline/compare/feature/slurm-outer-script...chore/cleanup-and-temp-default), [`fix/config-loading-and-backup`](https://github.com/quasar1357/align_pipeline/compare/refactor/repo-structure...fix/config-loading-and-backup), [`feature/cleanup-on-success`](https://github.com/quasar1357/align_pipeline/compare/feature/cluster-package-install...feature/cleanup-on-success))
 
 ### 8. Observability — know what ran and where it stopped
 
@@ -128,12 +128,12 @@ ending with a clear "finished" vs "still running" marker.
 
 **Why —** users can watch progress and diagnose a stalled run from the logs alone.
 
-**Where —** [`…feature/block-progress-logging`](https://github.com/quasar1357/towbintools_pipeline/compare/chore/cleanup-and-temp-default...feature/block-progress-logging)
+**Where —** [`…feature/block-progress-logging`](https://github.com/quasar1357/align_pipeline/compare/chore/cleanup-and-temp-default...feature/block-progress-logging)
 
 ### 9. A repository that explains itself
 
 The layout is now four clear tiers — the **package** (the pipeline itself, the folder
-"towbintools_pipeline"), the **deployment glue** (environment definitions + operational
+"align_pipeline"), the **deployment glue** (environment definitions + operational
 scripts, the folder "env"), the **extras** (tools, GUI, training, analysis_and_plots),
 and the **meta/docs/tests**. The old "auto-reset your checkout from git on every launch"
 behaviour was replaced by an explicit update command.
@@ -141,7 +141,7 @@ behaviour was replaced by an explicit update command.
 **Why —** a newcomer can tell what each part is for, and launching a run no longer
 silently changes your working copy.
 
-**Where —** [`…refactor/repo-structure`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/externalize-io...refactor/repo-structure) (the launcher/job/Python responsibility split came in [`refactor/script-responsibilities`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/block-progress-logging...refactor/script-responsibilities); then [`refactor/deployment-layout`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/packaging-entry-point...refactor/deployment-layout), [`chore/retire-git-self-update`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/launcher-decoupling...chore/retire-git-self-update))
+**Where —** [`…refactor/repo-structure`](https://github.com/quasar1357/align_pipeline/compare/feature/externalize-io...refactor/repo-structure) (the launcher/job/Python responsibility split came in [`refactor/script-responsibilities`](https://github.com/quasar1357/align_pipeline/compare/feature/block-progress-logging...refactor/script-responsibilities); then [`refactor/deployment-layout`](https://github.com/quasar1357/align_pipeline/compare/feature/packaging-entry-point...refactor/deployment-layout), [`chore/retire-git-self-update`](https://github.com/quasar1357/align_pipeline/compare/feature/launcher-decoupling...chore/retire-git-self-update))
 
 ### 10. A safety net — tests and continuous integration
 
@@ -153,7 +153,7 @@ but it can be easily expanded.
 **Why —** this refactor itself was validated continuously, and future changes are
 protected from silent regressions.
 
-**Where —** same PR as config validation, [`…feature/config-validation-ci`](https://github.com/quasar1357/towbintools_pipeline/compare/feature/folder-ref-decoupling...feature/config-validation-ci) (commits `def211d`, `3cec1db`)
+**Where —** same PR as config validation, [`…feature/config-validation-ci`](https://github.com/quasar1357/align_pipeline/compare/feature/folder-ref-decoupling...feature/config-validation-ci) (commits `def211d`, `3cec1db`)
 
 ### How the work was done
 

@@ -1,7 +1,9 @@
 import os
 
-from towbintools.foundation.file_handling import add_dir_to_experiment_filemap
-from towbintools.foundation.file_handling import get_dir_filemap
+from align_toolbox.foundation.file_handling import (
+    add_dir_to_experiment_filemap,
+    get_dir_filemap,
+)
 
 experiment_path = "path/to/experiment"
 raw_dir_name = "raw"

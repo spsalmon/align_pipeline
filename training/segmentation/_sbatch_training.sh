@@ -40,4 +40,4 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 # Run the Python script with the specified or default configuration file
-CUDA_LAUNCH_BLOCKING=1 ~/.local/bin/micromamba run -n towbintools python3 train_your_segmentation_model.py -c "$CONFIG_FILE"
+CUDA_LAUNCH_BLOCKING=1 ~/.local/bin/micromamba run -n align_pipeline python3 train_your_segmentation_model.py -c "$CONFIG_FILE"

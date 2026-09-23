@@ -1,4 +1,4 @@
-name: towbintools
+name: align_pipeline
 channels:
   - conda-forge
 dependencies:
@@ -34,7 +34,7 @@ dependencies:
     - bioio-ome-zarr
     - crc32c # missing dependency for bioio-ome-tiff
     - microfilm
-    - towbintools
+    - align_toolbox
     - shiny
     - shinywidgets
     - statannotations

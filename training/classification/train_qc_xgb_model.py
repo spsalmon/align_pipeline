@@ -6,15 +6,12 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 import yaml
+from align_toolbox.classification.qc_tools import compute_qc_features
 from bayes_opt import BayesianOptimization
-from joblib import Parallel
-from joblib import delayed
-from joblib import dump
-from sklearn.metrics import classification_report
-from sklearn.metrics import f1_score
+from joblib import Parallel, delayed, dump
+from sklearn.metrics import classification_report, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_sample_weight
-from towbintools.classification.qc_tools import compute_qc_features
 from tqdm import tqdm
 
 

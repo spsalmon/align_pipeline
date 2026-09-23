@@ -23,7 +23,7 @@ subcommand dispatcher — see "CLI / commands".)
    (drive blocks one at a time, opt-in linking) alongside the current config-driven
    run. Larger design effort; optional.
 4. **Publish to PyPI** — currently installed from the repo/checkout only; publishing
-   would make `pip install towbintools-pipeline` work directly. Easy later step.
+   would make `pip install align_toolbox-pipeline` work directly. Easy later step.
 5. **Config validation, further** — optional warning-level "contents reasonable"
    checks (e.g. `experiment_dir` contains a `raw/`), and running `validate_config`
    in the login-node pre-flight (see the follow-up under "Config validation").

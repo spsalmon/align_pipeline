@@ -1,7 +1,6 @@
 import polars as pl
 import pytest
-from towbintools.foundation.file_handling import read_filemap
-from towbintools.foundation.file_handling import write_filemap
+from align_toolbox.foundation.file_handling import read_filemap, write_filemap
 
 
 def make_legacy_filemap():

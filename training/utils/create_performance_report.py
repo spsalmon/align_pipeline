@@ -3,20 +3,19 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-from joblib import Parallel
-from joblib import delayed
+from align_toolbox.deep_learning.deep_learning_tools import (
+    load_segmentation_model_from_checkpoint,
+)
+from align_toolbox.deep_learning.utils.augmentation import (
+    get_prediction_augmentation_from_model,
+)
+from align_toolbox.deep_learning.utils.dataset import SegmentationPredictionDataset
+from align_toolbox.foundation import image_handling
+from align_toolbox.foundation.image_handling import read_tiff_file
+from joblib import Parallel, delayed
 from sklearn import metrics
 from tifffile import imwrite
 from torch.utils.data import DataLoader
-from towbintools.deep_learning.deep_learning_tools import (
-    load_segmentation_model_from_checkpoint,
-)
-from towbintools.deep_learning.utils.augmentation import (
-    get_prediction_augmentation_from_model,
-)
-from towbintools.deep_learning.utils.dataset import SegmentationPredictionDataset
-from towbintools.foundation import image_handling
-from towbintools.foundation.image_handling import read_tiff_file
 from tqdm import tqdm
 
 

@@ -1,6 +1,6 @@
 version: 1
 project:
-  title: towbintools_pipeline
+  title: ALIGN pipeline
   authors:
     - name: Sacha Psalmon
     - name: Towbin Lab
@@ -20,7 +20,7 @@ project:
         - file: usage/PipelineOutput.md
         - file: usage/UsingGUI.md
         - file: usage/Plotting.md
-        - file: usage/Towbintools.md
+        - file: usage/ALIGN.md
     - title: Training
       children:
         - file: training/Training.md

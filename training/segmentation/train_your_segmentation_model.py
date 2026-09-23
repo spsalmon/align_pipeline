@@ -11,20 +11,22 @@ import pytorch_lightning.loggers as pl_loggers
 import torch
 import torch.nn as nn
 import yaml
-from towbintools.deep_learning.deep_learning_tools import create_segmentation_model
-from towbintools.deep_learning.utils.augmentation import get_prediction_augmentation
-from towbintools.deep_learning.utils.augmentation import get_training_augmentation
-from towbintools.deep_learning.utils.dataset import create_segmentation_dataloaders
-from towbintools.deep_learning.utils.dataset import (
-    create_segmentation_dataloaders_from_filemap,
+from align_toolbox.deep_learning.deep_learning_tools import create_segmentation_model
+from align_toolbox.deep_learning.utils.augmentation import (
+    get_prediction_augmentation,
+    get_training_augmentation,
 )
-from towbintools.deep_learning.utils.dataset import (
+from align_toolbox.deep_learning.utils.dataset import (
+    create_segmentation_dataloaders,
+    create_segmentation_dataloaders_from_filemap,
     create_segmentation_training_dataframes_and_dataloaders,
 )
-from towbintools.deep_learning.utils.loss import BCELossWithIgnore
-from towbintools.deep_learning.utils.loss import FocalTverskyLoss
-from towbintools.deep_learning.utils.loss import MultiClassFocalLoss
-from towbintools.deep_learning.utils.util import create_lightweight_checkpoint
+from align_toolbox.deep_learning.utils.loss import (
+    BCELossWithIgnore,
+    FocalTverskyLoss,
+    MultiClassFocalLoss,
+)
+from align_toolbox.deep_learning.utils.util import create_lightweight_checkpoint
 
 seed = 42
 random.seed(seed)

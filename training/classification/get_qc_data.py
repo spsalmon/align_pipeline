@@ -5,11 +5,13 @@ import shutil
 import numpy as np
 import polars as pl
 import yaml
+from align_toolbox.data_analysis.time_series import (
+    correct_series_with_classification,
+    smooth_series_classified,
+)
+from align_toolbox.foundation.file_handling import read_filemap
+from align_toolbox.foundation.image_handling import read_tiff_file
 from tifffile import imwrite
-from towbintools.data_analysis.time_series import correct_series_with_classification
-from towbintools.data_analysis.time_series import smooth_series_classified
-from towbintools.foundation.file_handling import read_filemap
-from towbintools.foundation.image_handling import read_tiff_file
 from tqdm import tqdm
 
 np.random.seed(387799)

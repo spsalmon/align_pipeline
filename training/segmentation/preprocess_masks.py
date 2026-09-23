@@ -3,11 +3,10 @@ import os
 
 import cv2
 import numpy as np
-from joblib import Parallel
-from joblib import delayed
+from align_toolbox.foundation.image_handling import read_tiff_file
+from joblib import Parallel, delayed
 from skimage.morphology import remove_small_objects
 from tifffile import imwrite
-from towbintools.foundation.image_handling import read_tiff_file
 
 
 def get_args():

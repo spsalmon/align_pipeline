@@ -9,8 +9,8 @@ list to hand to a reviewer, this one feeds the docs. Forward-looking engineering
 TODOs and the future-work index live in `OUTLOOK.md`.
 
 ## Repo structure
-- `towbintools_pipeline/` = core pipeline package (`python -m
-  towbintools_pipeline...`), with `workers/` (one worker per block) and
+- `align_pipeline/` = core pipeline package (`python -m
+  align_pipeline...`), with `workers/` (one worker per block) and
   `defaults/` = bundled `config/` + `models/` (fallbacks/examples, shipped as
   package data and resolved package-relative). `scripts/` = automation bash.
   `tools/` = one-off data-conversion helpers (auxiliary). `examples/custom_scripts/`
@@ -21,13 +21,13 @@ TODOs and the future-work index live in `OUTLOOK.md`.
 
 ## Repo map & deployment lifecycle (turn into a README diagram at the docs step)
 Four tiers:
-- PACKAGE: `towbintools_pipeline/` (core + `workers/` + `defaults/`) -- the
+- PACKAGE: `align_pipeline/` (core + `workers/` + `defaults/`) -- the
   installable, self-contained pipeline.
 - DEPLOYMENT: `env/` and `scripts/`, which pair up. `env/` = define & build the
   conda environment (spec + generated locks + `build_env.sh`/`generate_lock.sh`);
   `scripts/` = operate the pipeline. Flow:
     `env/environment.yml` --generate_lock.sh--> `env/conda-linux-64.lock`
-      --build_env.sh--> the `towbintools` env
+      --build_env.sh--> the `align_pipeline` env
     `scripts/install_pipeline.sh` orchestrates that build (+ `pip install -e .
       --no-deps` once PR C lands, to register the package + entry point)
     `scripts/run_pipeline.sh` -> `scripts/_init_pipeline.sh` -> the package
@@ -47,15 +47,15 @@ Four tiers:
 ## Installation / environment
 - Local install without micromamba, any OS: run `bash scripts/install_pipeline_local.sh`
   (creates the env + editable install via `conda run`), then `conda activate
-  towbintools_local`. Manual equivalent: `conda env create -f
-  env/environment_local.yml`, `conda activate towbintools_local`,
+  align_pipeline_local`. Manual equivalent: `conda env create -f
+  env/environment_local.yml`, `conda activate align_pipeline_local`,
   `pip install -e ".[dev]"`. Three install paths: cluster
   (`install_pipeline.sh`), local (`install_pipeline_local.sh`), manual package.
 - `lxml` is needed to read OME-TIFF metadata cleanly (otherwise a warning).
 - Cluster path (micromamba + conda-lock + `scripts/install_pipeline.sh`): builds
   the locked env, then registers the pipeline package into it with
-  `pip install -e . --no-deps` (so `towbintools_pipeline` imports from any cwd and
-  the `towbintools-pipeline` command exists). `update_pipeline.sh` reinstalls it
+  `pip install -e . --no-deps` (so `align_pipeline` imports from any cwd and
+  the `align_pipeline` command exists). `update_pipeline.sh` reinstalls it
   only when it rebuilds the env; a pipeline-only update relies on the editable
   install already tracking the checkout.
 - `pip install -e ".[dev]"` (via pyproject.toml) installs the pipeline as a
@@ -72,9 +72,9 @@ Four tiers:
 - New `backend` config option: `slurm` (default, submits jobs) vs `local` (runs
   in-process, no slurm/micromamba).
 - Local run, from the repo root:
-  `python -m towbintools_pipeline.init_pipeline -c <config> --temp_dir <dir>`.
+  `python -m align_pipeline.init_pipeline -c <config> --temp_dir <dir>`.
 - Installed console command (equivalent, works from any cwd once pip-installed):
-  `towbintools-pipeline -c <config> --temp_dir <dir>` (entry point ->
+  `align_pipeline -c <config> --temp_dir <dir>` (entry point ->
   `init_pipeline:main`). The `-m` form stays the fallback and is still what the
   cluster launcher uses until the package is installed there (env consolidation).
 - `experiment_dir` can be given with `--experiment_dir` (overrides the config).
@@ -102,11 +102,11 @@ Four tiers:
   `sbatch_output/` instead of moving into the run dir.
 - Only `batch/` and `sbatch_output/` are slurm-specific; every other write
   (outputs, report, backup, provenance, pickles) happens on both backends.
-- `towbintools_pipeline/workers/` holds one worker per block implementation,
+- `align_pipeline/workers/` holds one worker per block implementation,
   named after its block (`straightening`, `morphology_computation`,
   `segmentation_non_learning`/`segmentation_learning_based`, ...). Each
   `BuildingBlock` stores its `worker_module` and `create_command` runs it with
-  `python -m towbintools_pipeline.workers.<name>`, so workers resolve by import
+  `python -m align_pipeline.workers.<name>`, so workers resolve by import
   rather than by a working-directory-relative path. Custom blocks run a
   user-supplied `custom_script_path` (file, `.py` or `.sh`) instead. Generated
   job scripts and logs stay named after the BLOCK (what `sbatch_overrides` keys
@@ -143,7 +143,7 @@ Four tiers:
 ## Code conventions (for the contributing/docs section)
 - Section dividers in a module are `# ---- Title ----` (capitalised, spaces around
   the dashes), two blank lines before, two after.
-- Imports are grouped stdlib / third-party / first-party (`towbintools_pipeline`),
+- Imports are grouped stdlib / third-party / first-party (`align_pipeline`),
   one blank line between groups. (`workers/straightening.py` keeps a `# noqa: E402`
   block because it sets an OpenBLAS env var before importing.)
 - Multiple names from the same module go in one `from x import a, b, c` statement,
@@ -153,7 +153,7 @@ Four tiers:
   (already holds package-wide; verified, no exceptions).
 - Module docstrings on the orchestration entry points (init_pipeline, block_linker,
   building_blocks, run_params); the workers are short enough to read directly.
-- Scope: these conventions were applied to the core package `towbintools_pipeline/`
+- Scope: these conventions were applied to the core package `align_pipeline/`
   (incl. `workers/`) and the `tests/` suite. NOT yet applied to the extras --
   `tools/`, `gui/`, `training/`, `examples/custom_scripts/` -- which are deferred
   to the non-core PR (F); bring them in line then. (`scripts/` is bash, N/A.)
@@ -191,7 +191,7 @@ Four tiers:
   `--mem-per-cpu` instead). `sbatch_extra_options` is a list of raw sbatch
   option strings rendered verbatim as `#SBATCH <option>` lines — cluster-specific
   directives (`--account`, `--mem-per-cpu`, `--partition`, custom gres) are now
-  config-only, no edits to `towbintools_pipeline/utils.py`.
+  config-only, no edits to `align_pipeline/utils.py`.
 - Per-block SLURM resources: the top-level `sbatch_*` keys are the shared
   default for every worker block. Override per block type under
   `sbatch_overrides` (keyed by block name, e.g. `segmentation`), merged over the
@@ -208,7 +208,7 @@ Four tiers:
   different time (`run_params.py`, from bash, before the pipeline starts), and
   it would collide with the block-name namespace.
 - The outer/orchestrator job's resources come from `sbatch_init`. `run_pipeline.sh`
-  turns them into sbatch CLI flags (via `python -m towbintools_pipeline.run_params
+  turns them into sbatch CLI flags (via `python -m align_pipeline.run_params
   --sbatch-init`) which override `_init_pipeline.sh`'s minimal header. So a new
   cluster is adjusted entirely in the config now — cluster-specific outer
   directives (`--account`, a custom `--gres` like the old `pipelinecapacity`
@@ -309,10 +309,10 @@ Four tiers:
   the error is there and no folders are created.
 
 ## CLI / commands
-- The installed command is a subcommand dispatcher (`towbintools_pipeline/cli.py`):
-  - `towbintools-pipeline run [config] [-c CONFIG] [-e ...] [-t ...]` — run the
+- The installed command is a subcommand dispatcher (`align_pipeline/cli.py`):
+  - `align_pipeline run [config] [-c CONFIG] [-e ...] [-t ...]` — run the
     pipeline. The config may be positional or `-c` (`-c` wins if both are given).
-  - `towbintools-pipeline init-configs [DIR] [--force]` — copy the bundled default
+  - `align_pipeline init-configs [DIR] [--force]` — copy the bundled default
     `config.yaml` + `slurm_config.yaml` into DIR (default cwd), so a user can start
     from them without digging into the installed package. Configs only (the bundled
     models are large; it prints where they live); skips existing files unless
@@ -320,8 +320,8 @@ Four tiers:
     one by a relative path.
 - Aliases: `tt-pipeline` and `ttp` are shorter console names for the same command.
 - Back-compat: with no recognised subcommand the arguments go straight to `run`,
-  so the old `towbintools-pipeline -c config.yaml` still works, as does
-  `python -m towbintools_pipeline.init_pipeline ...` (the cluster launcher path,
+  so the old `align_pipeline -c config.yaml` still works, as does
+  `python -m align_pipeline.init_pipeline ...` (the cluster launcher path,
   untouched). New extras (e.g. a `start-gui`) slot in as further subcommands, each
   lazy-importing its module so `run` never pays for their dependencies.
 
@@ -337,7 +337,7 @@ Four tiers:
 
 ## Known cleanups to mention / finish before docs
 - Document custom blocks. The `CustomBuildingBlock.create_command` bug (missing
-  `config` param, plus a doubled `run -n towbintools python3` launcher) is fixed;
+  `config` param, plus a doubled `run -n align_pipeline python3` launcher) is fixed;
   custom blocks now work on both backends.
 - The outer orchestrator job's resources are now config-driven: `run_pipeline.sh`
   passes sbatch CLI flags built from `sbatch_init`, overriding the minimal header

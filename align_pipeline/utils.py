@@ -9,12 +9,9 @@ from datetime import datetime
 import numpy as np
 import polars as pl
 import yaml
-from joblib import Parallel
-from joblib import delayed
-from joblib import parallel_config
-from towbintools.foundation.file_handling import read_filemap
-from towbintools.foundation.file_handling import write_filemap
-from towbintools.foundation.image_handling import get_acquisition_date
+from align_toolbox.foundation.file_handling import read_filemap, write_filemap
+from align_toolbox.foundation.image_handling import get_acquisition_date
+from joblib import Parallel, delayed, parallel_config
 
 # ---- File handling ----
 
@@ -643,11 +640,11 @@ def save_version_control_info(temp_dir):
 
     lines.append(f"Python Version: {sys.version}")
     try:
-        import towbintools
+        import align_toolbox
 
-        lines.append(f"towbintools Version: {towbintools.__version__}")
+        lines.append(f"align_toolbox Version: {align_toolbox.__version__}")
     except Exception as e:
-        lines.append(f"towbintools Version unavailable: {e}")
+        lines.append(f"align_toolbox Version unavailable: {e}")
 
     with open(os.path.join(temp_dir, "git_info.txt"), "w") as f:
         f.write("\n".join(lines) + "\n")
@@ -661,7 +658,7 @@ def get_python_command(config):
         return python_command
     if config.get("backend", "slurm") == "local":
         return sys.executable
-    return "~/.local/bin/micromamba run -n towbintools python3"
+    return "~/.local/bin/micromamba run -n align_pipeline python3"
 
 
 def create_linker_command(
@@ -672,7 +669,7 @@ def create_linker_command(
     # A block with no output has no result to record, so --result is left off
     # rather than passed as the string "None".
     linker_command = (
-        f"{python_command} -m towbintools_pipeline.block_linker --temp_dir {temp_dir}"
+        f"{python_command} -m align_pipeline.block_linker --temp_dir {temp_dir}"
     )
     if result is not None:
         linker_command += f" --result {result}"

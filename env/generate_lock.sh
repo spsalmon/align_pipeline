@@ -24,7 +24,7 @@ rm -f conda-lock.yml conda-linux-64.lock conda-linux-64.lock.yml
 # 1. Solve the environment -> conda-lock.yml
 # Driven through conda_lock_patched.py rather than the conda-lock executable so
 # that manylinux_2_27 wheels (nvidia-nccl-cu13, via xgboost) can be resolved.
-~/.local/bin/micromamba run -n towbintools python conda_lock_patched.py lock -f environment.yml -p linux-64 --micromamba
+~/.local/bin/micromamba run -n align_pipeline python conda_lock_patched.py lock -f environment.yml -p linux-64 --micromamba
 
 # 2. Render the explicit single-platform lock -> conda-linux-64.lock
-~/.local/bin/micromamba run -n towbintools conda-lock render -k explicit
+~/.local/bin/micromamba run -n align_pipeline conda-lock render -k explicit
