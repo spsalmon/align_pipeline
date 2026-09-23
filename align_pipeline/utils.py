@@ -214,8 +214,10 @@ def get_output_name(
 def setup_run_dir(temp_dir, backend="slurm"):
     # Give the run its own directory under temp_dir (slurm job id, or start time
     # without slurm), create its folder structure and, on slurm, move the
-    # launcher's logs in. Returns the run directory.
-    job_id = os.environ.get("SLURM_JOB_ID")
+    # launcher's logs in. Returns the run directory. The job id comes from
+    # _init_pipeline.sh, not SLURM_JOB_ID, which is also set in any interactive
+    # allocation and would make every run there share one directory.
+    job_id = os.environ.get("ALIGN_INIT_JOB_ID")
     if not job_id:
         run_dir = os.path.join(
             temp_dir, datetime.now().strftime("pipeline_%Y%m%d-%H%M%S")
