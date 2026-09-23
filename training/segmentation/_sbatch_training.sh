@@ -3,6 +3,7 @@
 #SBATCH -J train
 #SBATCH -o ../../sbatch_output/train-%j.out
 #SBATCH -e ../../sbatch_output/train-%j.err
+#SBATCH --ntasks=1
 #SBATCH -c 64
 #SBATCH -t 72:00:00
 #SBATCH --mem=64GB

@@ -3,6 +3,7 @@
 #SBATCH -J train_molt
 #SBATCH -o ../../sbatch_output/train_molt-%j.out
 #SBATCH -e ../../sbatch_output/train_molt-%j.err
+#SBATCH --ntasks=1
 #SBATCH -c 32
 #SBATCH -t 24:00:00
 #SBATCH --mem=32GB
