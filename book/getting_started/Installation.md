@@ -102,7 +102,8 @@ you run the commands from a bash shell (Git Bash).
 Once the environment is active, this should print the available commands:
 
 ```bash
-align_pipeline
+align
 ```
 
-`tt-pipeline` and `ttp` are shorter names for exactly the same command.
+`align_pipeline` (as well as the legacy `tt-pipeline` and `ttp`) is an alias for
+exactly the same command.

@@ -1,6 +1,6 @@
-# align_pipeline
+# ALIGN
 
-align_pipeline is a modular pipelining tool made to streamline the analysis
+ALIGN is a modular pipelining tool made to streamline the analysis
 of *C. elegans* time lapse microscopy experiments. It includes:
 
 - a robust and human readable configuration system for reproducible image

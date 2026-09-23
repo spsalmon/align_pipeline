@@ -10,7 +10,7 @@ section.
 Get a working configuration to start from with:
 
 ```bash
-align_pipeline init-configs ~/my_configs
+align init-configs ~/my_configs
 ```
 
 ## Experiment and outputs

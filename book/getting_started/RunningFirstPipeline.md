@@ -9,7 +9,7 @@ The pipeline ships with a working example configuration. Copy it into a folder o
 your choice with:
 
 ```bash
-align_pipeline init-configs ~/my_configs
+align init-configs ~/my_configs
 ```
 
 This writes two files:
@@ -154,7 +154,7 @@ bash scripts/run_pipeline.sh -c ~/my_configs/my_experiment.yaml
 **On your own machine** (with `backend: "local"` in the config), from anywhere:
 
 ```bash
-align_pipeline run ~/my_configs/my_experiment.yaml
+align run ~/my_configs/my_experiment.yaml
 ```
 
 The `-c` argument specifies the configuration to run. Two more optional arguments

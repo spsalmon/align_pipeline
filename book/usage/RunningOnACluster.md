@@ -17,8 +17,7 @@ These resource requests live in their own file, next to your main configuration:
 slurm_config: "slurm_config.yaml"
 ```
 
-The path is relative to the main configuration file. `align_pipeline
-init-configs` copies both files together for this reason.
+The path is relative to the main configuration file. `align init-configs` copies both files together for this reason.
 
 The file looks like this:
 

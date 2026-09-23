@@ -33,7 +33,7 @@ You will find a detailed explanation on how to run the pipeline here : <https://
 Short version:
 
 ```bash
-align_pipeline init-configs ~/my_configs   # get a config to start from
+align init-configs ~/my_configs   # get a config to start from
 # edit ~/my_configs/config.yaml
 bash scripts/run_pipeline.sh -c ~/my_configs/config.yaml
 ```
@@ -41,7 +41,7 @@ bash scripts/run_pipeline.sh -c ~/my_configs/config.yaml
 Without a cluster, set `backend: "local"` in the config and run it directly:
 
 ```bash
-align_pipeline run ~/my_configs/config.yaml
+align run ~/my_configs/config.yaml
 ```
 
 ## Updating the pipeline
@@ -74,7 +74,7 @@ tests/                  Automated tests
 The four things to know:
 
 - **`align_pipeline/`** is the pipeline. It is installed as a package, so
-  the `align_pipeline` command works from any directory.
+  the `align` command (alias `align_pipeline`) works from any directory.
 - **`scripts/` and `env/`** are the glue that installs and runs it. `env/` builds
   the environment, `scripts/` operates the pipeline.
 - **`gui/`, `training/`, `tools/`** are extras, each with its own launch scripts.

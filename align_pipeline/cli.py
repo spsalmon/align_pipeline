@@ -1,7 +1,7 @@
-"""Console entry point: dispatch `align_pipeline <subcommand>` to the
+"""Console entry point: dispatch `align <subcommand>` to the
 right handler. Handlers lazy-import their module so a plain `run` does not pay
 for another subcommand's dependencies. With no known subcommand the arguments
-are treated as a `run`, so the previous `align_pipeline -c config.yaml`
+are treated as a `run`, so the previous `align -c config.yaml`
 form keeps working.
 """
 
@@ -28,7 +28,7 @@ def _init_config(argv):
     # from them without digging into the installed package. Configs only (the
     # bundled models are large); non-destructive unless --force.
     parser = argparse.ArgumentParser(
-        prog="align_pipeline init-configs",
+        prog="align init-configs",
         description="Copy the bundled default config files into a directory.",
     )
     parser.add_argument(
@@ -65,7 +65,7 @@ SUBCOMMANDS = {
 
 
 def _print_help():
-    print("Usage: align_pipeline <command> [options]\n")
+    print("Usage: align <command> [options]\n")
     print("Commands:")
     print("  run           Run the pipeline (positional config or -c/--config)")
     print("  init-configs  Copy the bundled default config files into a directory")

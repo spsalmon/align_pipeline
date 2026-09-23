@@ -1,6 +1,6 @@
 """Pipeline entry point: load the config, build the sequence of building blocks
 for the experiment (per raw subdir), and launch the first one. The block linker
-chains the rest. Exposed as the `align_pipeline` command via main().
+chains the rest. Exposed as the `align` command via main().
 """
 
 import argparse

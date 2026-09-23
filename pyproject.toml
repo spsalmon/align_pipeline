@@ -1,6 +1,6 @@
 # Packaging for the pipeline core: makes the repo pip-installable
 # (`pip install -e .`) so it runs from any cwd, declares the core runtime
-# dependencies, and exposes the `align_pipeline` command.
+# dependencies, and exposes the `align` command.
 [build-system]
 requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
@@ -37,10 +37,11 @@ dev = ["pytest"]
 cellpose = ["cellpose==4.2.1.1"]
 
 [project.scripts]
-# Subcommand dispatcher: `align_pipeline run|init-configs`. With no known
-# subcommand it forwards to `run`, so `align_pipeline -c config.yaml` and
+# Subcommand dispatcher: `align run|init-configs`. With no known
+# subcommand it forwards to `run`, so `align -c config.yaml` and
 # `python -m align_pipeline.init_pipeline` both still work.
-# `tt-pipeline` and `ttp` are shorter aliases for the same command.
+# `align_pipeline`, `tt-pipeline` and `ttp` are aliases for the same command.
+align = "align_pipeline.cli:main"
 align_pipeline = "align_pipeline.cli:main"
 tt-pipeline = "align_pipeline.cli:main"
 ttp = "align_pipeline.cli:main"

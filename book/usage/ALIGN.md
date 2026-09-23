@@ -7,7 +7,7 @@ image analysis itself (segmentation, straightening, feature computation, quality
 control, molt detection, plotting…) lives in ALIGN.
 
 This means you can use the same functions in your own scripts and notebooks,
-without running the pipeline. It is already installed in the `align_pipeline`
+without running the pipeline. It is already installed in the `align`
 environment, and can be installed anywhere else with:
 
 ```bash
