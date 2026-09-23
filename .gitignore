@@ -194,3 +194,4 @@ docs
 *.pickle
 training/molt_detection/model_checkpoints/
 !align_pipeline/defaults/models/*/*.pkl
+.vscode/
