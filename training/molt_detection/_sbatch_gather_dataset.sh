@@ -39,4 +39,4 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 # Run the Python script with the specified or default configuration file
-~/.local/bin/micromamba run -n align_pipeline python3 get_molt_detection_data.py -c "$CONFIG_FILE"
+~/.local/bin/micromamba run -n align python3 get_molt_detection_data.py -c "$CONFIG_FILE"

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Build the `align_pipeline` environment WITHOUT ever mutating the live env folder.
+# Build the `align` environment WITHOUT ever mutating the live env folder.
 #
 # Why this exists:
 #   `micromamba create/install` updates the env folder IN PLACE. When it has to
@@ -11,16 +11,16 @@ set -euo pipefail
 #
 # How this avoids it:
 #   Every build goes into a brand-new, never-busy, timestamped prefix
-#   (envs/align_pipeline_<timestamp>). A stable `envs/align_pipeline` SYMLINK is then
-#   flipped to point at it. micromamba resolves `-n align_pipeline` through the
-#   symlink, so all the hardcoded `micromamba run -n align_pipeline ...` calls keep
+#   (envs/align_<timestamp>). A stable `envs/align` SYMLINK is then
+#   flipped to point at it. micromamba resolves `-n align` through the
+#   symlink, so all the hardcoded `micromamba run -n align ...` calls keep
 #   working. A failed build leaves the previous env untouched, and busy files in
 #   old versions are never in the deletion path of an update.
 #
 # Usage: build_env.sh            (build fresh + switch over)
 
 MAMBA="$HOME/.local/bin/micromamba"
-ENV_NAME=align_pipeline
+ENV_NAME=align
 LOCK_FILE="$(cd "$(dirname "$0")" && pwd)/conda-linux-64.lock"
 
 ROOT="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}"
@@ -45,7 +45,7 @@ rm -f "$TEMP_PIP_REQS"
 # --- Register the Jupyter kernel from the NEW prefix ----------------------------
 "$MAMBA" run -p "$NEW" python -m ipykernel install --user --name="$ENV_NAME"
 
-# --- Atomically switch `align_pipeline` over to the new prefix ---------------------
+# --- Atomically switch `align` over to the new prefix ---------------------
 if [ -L "$STABLE" ]; then
     # Already a symlink: flip it atomically (create temp link, rename over).
     ln -sfn "$NEW" "${STABLE}.tmp"
@@ -68,7 +68,9 @@ KSPEC="$HOME/.local/share/jupyter/kernels/$ENV_NAME/kernel.json"
 # --- Best-effort cleanup of old / legacy prefixes no longer in use --------------
 # Busy files simply cause a skip; leftovers are harmless (never the live env).
 CURRENT="$(readlink -f "$STABLE")"
-for d in "$ENVS/${ENV_NAME}_"*; do
+# Only match prefixes this script creates (timestamped builds, legacy renames), so
+# unrelated envs that merely start with "${ENV_NAME}_" are never touched.
+for d in "$ENVS/${ENV_NAME}_"[0-9]* "$ENVS/${ENV_NAME}_legacy_"*; do
     [ -d "$d" ] || continue
     [ "$(readlink -f "$d")" = "$CURRENT" ] && continue
     echo ">> Removing old env (best effort): $d"

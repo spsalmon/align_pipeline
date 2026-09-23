@@ -23,7 +23,7 @@ On your own machine (conda, no cluster needed):
 
 ```bash
 bash scripts/install_pipeline_local.sh
-conda activate align_pipeline_local
+conda activate align_local
 ```
 
 ## Running the pipeline

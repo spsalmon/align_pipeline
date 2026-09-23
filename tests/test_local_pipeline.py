@@ -564,7 +564,7 @@ def test_get_python_command():
 
     assert get_python_command({"backend": "local"}) == sys.executable
     assert get_python_command({"backend": "slurm"}) == (
-        "~/.local/bin/micromamba run -n align_pipeline python3"
+        "~/.local/bin/micromamba run -n align python3"
     )
     assert (
         get_python_command(

@@ -8,4 +8,4 @@
 # Arguments go straight to the pipeline, which parses them, resolves its own run
 # directory and moves the logs above into it. ALIGN_PYTHON is inherited
 # from run_pipeline.sh; the default covers a direct sbatch of this script.
-${ALIGN_PYTHON:-$HOME/.local/bin/micromamba run -n align_pipeline python3} -m align_pipeline.init_pipeline "$@"
+${ALIGN_PYTHON:-$HOME/.local/bin/micromamba run -n align python3} -m align_pipeline.init_pipeline "$@"

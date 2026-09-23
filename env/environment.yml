@@ -1,4 +1,4 @@
-name: align_pipeline
+name: align
 channels:
   - conda-forge
 dependencies:

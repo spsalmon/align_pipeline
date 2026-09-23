@@ -104,7 +104,7 @@ conda, or a plain virtual environment, set `python_command` in your main
 configuration:
 
 ```yaml
-python_command: "conda run -n align_pipeline python"
+python_command: "conda run -n align python"
 ```
 
 This one key controls how Python is started everywhere, both for the orchestrator

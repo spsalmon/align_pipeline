@@ -10,4 +10,4 @@
 INPUT_DIR="/mnt/towbin.data/shared/fdell/Starvation_survival_wild_strains/20260501_SQUID0_wBT499to506_starvation_survival/squid_raw/"
 OUTPUT_DIR="/mnt/towbin.data/shared/fdell/Starvation_survival_wild_strains/20260501_SQUID0_wBT499to506_starvation_survival/raw/"
 
-~/.local/bin/micromamba run -n align_pipeline python3 convert_squid_experiment.py --input-dir $INPUT_DIR --output-dir $OUTPUT_DIR
+~/.local/bin/micromamba run -n align python3 convert_squid_experiment.py --input-dir $INPUT_DIR --output-dir $OUTPUT_DIR

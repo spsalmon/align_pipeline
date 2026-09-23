@@ -58,7 +58,7 @@ bash scripts/install_pipeline_local.sh
 3. Activate the environment:
 
 ```bash
-conda activate align_pipeline_local
+conda activate align_local
 ```
 
 If you prefer to do it by hand, the script is equivalent to:
@@ -66,7 +66,7 @@ If you prefer to do it by hand, the script is equivalent to:
 ```bash
 cd ~/align_pipeline
 conda env create -f env/environment_local.yml
-conda activate align_pipeline_local
+conda activate align_local
 pip install -e ".[dev]"
 ```
 

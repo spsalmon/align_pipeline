@@ -7,4 +7,4 @@
 #SBATCH -t 48:00:00
 #SBATCH --mem=32GB
 
-~/.local/bin/micromamba run -n align_pipeline python3 extract_time_from_filemap.py
+~/.local/bin/micromamba run -n align python3 extract_time_from_filemap.py

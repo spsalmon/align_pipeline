@@ -37,7 +37,7 @@ done
 # micromamba default. Grepped (not read via python) because python is the very
 # thing we are resolving. Exported so the sbatch job inherits the same launcher.
 CONFIG_PYTHON=$(grep -E '^[[:space:]]*python_command:' "$CONFIG_FILE" 2>/dev/null | head -1 | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]]*(#.*)?$//; s/^["'\'']//; s/["'\'']$//')
-export ALIGN_PYTHON="${ALIGN_PYTHON:-${CONFIG_PYTHON:-$HOME/.local/bin/micromamba run -n align_pipeline python3}}"
+export ALIGN_PYTHON="${ALIGN_PYTHON:-${CONFIG_PYTHON:-$HOME/.local/bin/micromamba run -n align python3}}"
 
 # Validate the config here on the login node so a bad one fails fast with the
 # error on the terminal, instead of costing a job submission and surfacing in the

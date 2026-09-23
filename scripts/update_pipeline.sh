@@ -22,7 +22,7 @@ if [[ "$PIPELINE_ONLY" == false ]]; then
     # Update micromamba
     ~/.local/bin/micromamba self-update
 
-    # Build a fresh environment prefix and switch the `align_toolbox` symlink over to
+    # Build a fresh environment prefix and switch the `align` env symlink over to
     # it, instead of mutating the live env in place. An in-place update corrupts the
     # env whenever micromamba cannot remove a busy file; building fresh + swapping
     # never has that problem. See env/build_env.sh.
@@ -31,5 +31,5 @@ if [[ "$PIPELINE_ONLY" == false ]]; then
     # The fresh env has no pipeline package yet; register it (editable, --no-deps).
     # A pipeline-only update skips this: the existing editable install already
     # tracks this checkout, which the git reset above just updated.
-    ~/.local/bin/micromamba run -n align_pipeline pip install -e . --no-deps
+    ~/.local/bin/micromamba run -n align pip install -e . --no-deps
 fi

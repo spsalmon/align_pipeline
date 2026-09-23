@@ -68,7 +68,7 @@ def check_dataset_exists(features_pickle, heatmaps_pickle, keypoints_pickle):
             "Could not find the molt detection dataset. Missing file(s):\n  "
             f"{missing_str}\n\n"
             "Gather the dataset first by running:\n"
-            "  ~/.local/bin/micromamba run -n align_pipeline python3 "
+            "  ~/.local/bin/micromamba run -n align python3 "
             "get_molt_detection_data.py -c configs/molt_dataset_config.yaml\n\n"
             "and make sure this config's 'dataset_dir' (or the explicit pickle "
             "paths) matches the gathering config's 'output_dir'."

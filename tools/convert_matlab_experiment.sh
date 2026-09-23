@@ -7,4 +7,4 @@
 #SBATCH -t 48:00:00
 #SBATCH --mem=32GB
 
-~/.local/bin/micromamba run -n align_pipeline python3 convert_matlab_experiment.py
+~/.local/bin/micromamba run -n align python3 convert_matlab_experiment.py

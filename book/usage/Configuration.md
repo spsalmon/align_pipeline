@@ -48,7 +48,7 @@ The block names are `segmentation`, `straightening`, `morphology_computation`,
 | `backend` | `"slurm"` | `"slurm"` submits each step as a cluster job; `"local"` runs them one after the other on the current machine. |
 | `n_jobs` | `sbatch_cpus`, else 1 | How many images are processed in parallel inside a step. |
 | `slurm_config` | `"slurm_config.yaml"` | Path to the cluster resource file, **relative to the configuration file**. Only used with the SLURM backend. |
-| `python_command` | micromamba (SLURM) / current interpreter (local) | The command used to launch Python everywhere. Set it if you use conda or a plain virtual environment instead of micromamba, e.g. `"conda run -n align_pipeline python"`. |
+| `python_command` | micromamba (SLURM) / current interpreter (local) | The command used to launch Python everywhere. Set it if you use conda or a plain virtual environment instead of micromamba, e.g. `"conda run -n align python"`. |
 
 Cluster resources (memory, CPUs, GPUs, time) live in the SLURM configuration file
 — see [running on a cluster](https://spsalmon.github.io/align_pipeline/usage/runningonacluster/).

@@ -658,7 +658,7 @@ def get_python_command(config):
         return python_command
     if config.get("backend", "slurm") == "local":
         return sys.executable
-    return "~/.local/bin/micromamba run -n align_pipeline python3"
+    return "~/.local/bin/micromamba run -n align python3"
 
 
 def create_linker_command(

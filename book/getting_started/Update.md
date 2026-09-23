@@ -55,13 +55,13 @@ to the lock file, run:
 
 ```bash
 cd ~/align_pipeline
-micromamba run -n align_pipeline conda-lock install --name align_pipeline ./env/conda-lock.yml
+micromamba run -n align conda-lock install --name align ./env/conda-lock.yml
 ```
 
 Finally, the pipeline package itself is registered in the fresh environment:
 
 ```bash
-micromamba run -n align_pipeline pip install -e . --no-deps
+micromamba run -n align pip install -e . --no-deps
 ```
 
 This last step is only needed when the environment was rebuilt. The pipeline is
@@ -75,7 +75,7 @@ If for some reason you end up with a broken environment, you can always delete i
 and create it again. To do so, run:
 
 ```bash
-micromamba env remove -n align_pipeline
+micromamba env remove -n align
 cd ~/align_pipeline
 bash scripts/install_pipeline.sh
 ```
@@ -84,7 +84,7 @@ You may also want to update the ALIGN package itself manually. To do so,
 run:
 
 ```bash
-micromamba run -n align_pipeline pip install -U align_toolbox
+micromamba run -n align pip install -U align_toolbox
 ```
 
 ## Updating a local install
@@ -94,6 +94,6 @@ On a local (conda) install, update the repository and reinstall the package:
 ```bash
 cd ~/align_pipeline
 git pull
-conda activate align_pipeline_local
+conda activate align_local
 pip install -e ".[dev]"
 ```
