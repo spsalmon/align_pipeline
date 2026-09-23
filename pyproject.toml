@@ -54,15 +54,12 @@ packages = ["towbintools_pipeline", "towbintools_pipeline.workers"]
 towbintools_pipeline = ["defaults/**/*.yaml", "defaults/**/*.ckpt", "defaults/**/*.json"]
 
 [tool.black]
-# Pin the target explicitly. Left unset, Black infers targets from
-# requires-python (">=3.11") and includes every future version it knows about
-# (py314), then fails its AST safety check when run under an older interpreter.
-# The floor of requires-python is the correct target: output must parse on 3.11.
-target-version = ["py311"]
+# pin the target so black's AST safety check does not depend on the
+# interpreter that happens to run the hook
+target-version = ["py310"]
 
 [tool.isort]
-# black-compatible import sorting. force_single_line keeps the one-import-per-line
-# style the repo already used under reorder-python-imports, which was dropped
-# because it strips the blank line after a module docstring that Black re-adds.
+# keep isort's output identical to what black would produce, otherwise the
+# two hooks rewrite each other on every commit
 profile = "black"
-force_single_line = true
+line_length = 88
