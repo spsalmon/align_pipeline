@@ -344,6 +344,9 @@ def process_feature_at_molt_columns(
         if ecdys not in filemap.columns:
             filemap = filemap.with_columns(pl.lit(np.nan).alias(ecdys))
 
+    if "ExperimentTime" not in filemap.columns:
+        filemap = fix_experiment_time(filemap)
+
     (
         time,
         experiment_time,
