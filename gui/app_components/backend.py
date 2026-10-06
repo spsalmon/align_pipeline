@@ -439,6 +439,11 @@ def _get_values_at_molt(filemap, column):
     return values_at_ecdysis
 
 
+def _get_value_at_event_columns(columns, ecdys_event):
+    # endswith, not substring: "_at_M1" must not match "_at_M1Entry"
+    return [column for column in columns if column.endswith(f"_at_{ecdys_event}")]
+
+
 def update_molt_and_ecdysis_columns(
     point_filemap,
     single_values_df,
@@ -458,9 +463,9 @@ def update_molt_and_ecdysis_columns(
     else:
         time = point_filemap.select(pl.col("Time")).to_numpy().squeeze().astype(float)
 
-    value_at_ecdys_columns = [
-        column for column in point_filemap.columns if f"_at_{ecdys_event}" in column
-    ]
+    value_at_ecdys_columns = _get_value_at_event_columns(
+        point_filemap.columns, ecdys_event
+    )
 
     value_columns = [
         re.sub(r"_at_.*$", "", column) for column in value_at_ecdys_columns
@@ -505,9 +510,9 @@ def update_molt_and_ecdysis_columns(
 
 
 def correct_ecdysis_columns(point_filemap, single_values_df, ecdys_event, time_index):
-    value_at_ecdys_columns = [
-        column for column in point_filemap.columns if f"_at_{ecdys_event}" in column
-    ]
+    value_at_ecdys_columns = _get_value_at_event_columns(
+        point_filemap.columns, ecdys_event
+    )
 
     value_columns = [
         re.sub(r"_at_.*$", "", column) for column in value_at_ecdys_columns
