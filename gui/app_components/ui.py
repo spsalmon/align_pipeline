@@ -52,18 +52,6 @@ def create_molt_annotator(ecdysis_list_id, entry_list_id, custom_columns_choices
                     ui.row(ui.input_action_button("set_death", "Dead")),
                     ui.row(ui.input_action_button("set_ignore_after", "Ignore After")),
                     ui.row(ui.input_action_button("set_ignore_point", "Ignore Point")),
-                    ui.row(
-                        ui.input_action_button(
-                            "recompute_values_at_molt_point",
-                            "Recompute values at molt (point)",
-                        )
-                    ),
-                    ui.row(
-                        ui.input_action_button(
-                            "recompute_values_at_molt_all",
-                            "Recompute values at molt (all points)",
-                        )
-                    ),
                 ),
                 ui.row(
                     ui.column(
@@ -82,6 +70,14 @@ def create_molt_annotator(ecdysis_list_id, entry_list_id, custom_columns_choices
                         2,
                         ui.input_action_button("custom_annotation", "Annotate"),
                         ui.input_action_button("reset_custom_annotation", "Reset"),
+                        ui.input_action_button(
+                            "recompute_values_at_molt_point",
+                            "Recompute values at molt (point)",
+                        ),
+                        ui.input_action_button(
+                            "recompute_values_at_molt_all",
+                            "Recompute values at molt (all points)",
+                        ),
                     ),
                 ),
                 ui.row(
