@@ -70,6 +70,9 @@ def create_molt_annotator(ecdysis_list_id, entry_list_id, custom_columns_choices
                         2,
                         ui.input_action_button("custom_annotation", "Annotate"),
                         ui.input_action_button("reset_custom_annotation", "Reset"),
+                    ),
+                    ui.column(
+                        2,
                         ui.input_action_button(
                             "recompute_values_at_molt_point",
                             "Recompute values at molt (point)",
