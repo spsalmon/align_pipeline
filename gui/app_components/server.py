@@ -19,6 +19,7 @@ from app_components.backend import (
     get_points_for_value_at_molts,
     populate_column_choices,
     process_feature_at_molt_columns,
+    recompute_values_at_molt_of_point,
     set_marker_shape,
 )
 from app_components.image_cache import (
@@ -553,6 +554,44 @@ def main_server(
             print(f"Exception caught while getting value at hatch and molts: {e}")
             for molt_value in molt_feature_values:
                 molt_value.set(np.nan)
+
+    @reactive.Effect
+    @reactive.event(input.recompute_values_at_molt_point)
+    def recompute_values_at_molt_point():
+        point_index = int(current_point_index())
+        new_single_values = recompute_values_at_molt_of_point(
+            point_filemaps[point_index],
+            single_values_of_point(),
+            experiment_time=use_experiment_time,
+        )
+        single_values_of_point.set(new_single_values)
+        ui.notification_show(
+            "Values at molt recomputed for the current point.", duration=3
+        )
+
+    @reactive.Effect
+    @reactive.event(input.recompute_values_at_molt_all)
+    def recompute_values_at_molt_all():
+        point_index = int(current_point_index())
+        # the list is only refreshed on point switch, so fold in the current point
+        all_single_values = list(single_values_of_points())
+        all_single_values[point_index] = single_values_of_point()
+
+        with ui.Progress(min=0, max=len(all_single_values)) as progress:
+            progress.set(message="Recomputing values at molt ...")
+            for i, (point_filemap, point_single_values) in enumerate(
+                zip(point_filemaps, all_single_values)
+            ):
+                all_single_values[i] = recompute_values_at_molt_of_point(
+                    point_filemap,
+                    point_single_values,
+                    experiment_time=use_experiment_time,
+                )
+                progress.set(i + 1)
+
+        single_values_of_points.set(all_single_values)
+        single_values_of_point.set(all_single_values[point_index])
+        ui.notification_show("Values at molt recomputed for all points.", duration=3)
 
     @reactive.Effect
     def set_ignore_start():

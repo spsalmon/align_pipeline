@@ -1,14 +1,15 @@
 from pathlib import Path
 
 import polars as pl
-from app_components.backend import ECDYSIS_COLUMNS
-from app_components.backend import MOLT_ENTRY_COLUMNS
-from app_components.backend import fix_experiment_time
-from app_components.backend import infer_n_channels
-from app_components.backend import populate_column_choices
-from app_components.backend import process_feature_at_molt_columns
-from app_components.ui_components import molt_annotation_buttons
-from app_components.ui_components import time_point_navigator
+from app_components.backend import (
+    ECDYSIS_COLUMNS,
+    MOLT_ENTRY_COLUMNS,
+    fix_experiment_time,
+    infer_n_channels,
+    populate_column_choices,
+    process_feature_at_molt_columns,
+)
+from app_components.ui_components import molt_annotation_buttons, time_point_navigator
 from shiny import ui
 from shinywidgets import output_widget
 
@@ -51,6 +52,18 @@ def create_molt_annotator(ecdysis_list_id, entry_list_id, custom_columns_choices
                     ui.row(ui.input_action_button("set_death", "Dead")),
                     ui.row(ui.input_action_button("set_ignore_after", "Ignore After")),
                     ui.row(ui.input_action_button("set_ignore_point", "Ignore Point")),
+                    ui.row(
+                        ui.input_action_button(
+                            "recompute_values_at_molt_point",
+                            "Recompute values at molt (point)",
+                        )
+                    ),
+                    ui.row(
+                        ui.input_action_button(
+                            "recompute_values_at_molt_all",
+                            "Recompute values at molt (all points)",
+                        )
+                    ),
                 ),
                 ui.row(
                     ui.column(

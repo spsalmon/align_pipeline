@@ -494,16 +494,38 @@ def update_molt_and_ecdysis_columns(
                 qc_values,
             )
 
-        print(
-            f"Old value {value_at_ecdys_column}: {single_values_df.select(pl.col(value_at_ecdys_column)).to_numpy().squeeze()}"
-        )
-
         single_values_df = single_values_df.with_columns(
             pl.lit(new_value_at_ecdys).alias(value_at_ecdys_column)
         )
 
-        print(
-            f"New value {value_at_ecdys_column}: {single_values_df.select(pl.col(value_at_ecdys_column)).to_numpy().squeeze()}"
+    return single_values_df
+
+
+def recompute_values_at_molt_of_point(
+    point_filemap, single_values_df, experiment_time=True
+):
+    """Recompute every `<feature>_at_<event>` value of a point from its
+    currently annotated event times, overwriting any pegged values."""
+    times = point_filemap.select(pl.col("Time")).to_numpy().ravel().astype(float)
+
+    for ecdys_event in VALUE_AT_COLUMNS:
+        if ecdys_event not in single_values_df.columns:
+            continue
+        event_time = single_values_df.select(pl.col(ecdys_event)).to_numpy().ravel()[0]
+        event_time = np.nan if event_time is None else float(event_time)
+
+        matching_indexes = np.where(times == event_time)[0]
+        event_time_index = (
+            float(matching_indexes[0]) if len(matching_indexes) > 0 else np.nan
+        )
+
+        single_values_df = update_molt_and_ecdysis_columns(
+            point_filemap,
+            single_values_df,
+            ecdys_event,
+            event_time,
+            event_time_index,
+            experiment_time=experiment_time,
         )
 
     return single_values_df

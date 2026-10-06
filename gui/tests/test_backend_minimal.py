@@ -1,13 +1,17 @@
 import numpy as np
 import polars as pl
-from app_components.backend import MOLT_ENTRY_COLUMNS
-from app_components.backend import _drop_join_artifact_columns
-from app_components.backend import build_single_values_df
-from app_components.backend import get_molt_interval_bands
-from app_components.backend import open_filemap
-from app_components.backend import populate_column_choices
-from app_components.backend import process_feature_at_molt_columns
-from app_components.backend import set_marker_shape
+import pytest
+from app_components.backend import (
+    MOLT_ENTRY_COLUMNS,
+    _drop_join_artifact_columns,
+    build_single_values_df,
+    get_molt_interval_bands,
+    open_filemap,
+    populate_column_choices,
+    process_feature_at_molt_columns,
+    recompute_values_at_molt_of_point,
+    set_marker_shape,
+)
 
 
 def make_minimal_filemap():
@@ -290,3 +294,40 @@ def test_set_marker_shape_marks_entry_as_diamond():
         m1_entry=2.0,
     )
     assert "diamond" in markers["symbol"]
+
+
+# --- recompute_values_at_molt_of_point ---
+
+
+def make_point_with_values_at_molt():
+    n = 20
+    point_filemap = pl.DataFrame(
+        {
+            "Time": list(range(n)),
+            "Point": [0] * n,
+            "ExperimentTime": [np.nan] * n,
+            "qc": ["worm"] * n,
+            "volume": [10.0 * (t + 1) for t in range(n)],
+            "HatchTime": [np.nan] * n,
+            "M1": [5.0] * n,
+            "M1Entry": [15.0] * n,
+            "volume_at_M1": [999.0] * n,
+            "volume_at_M1Entry": [999.0] * n,
+            "volume_at_HatchTime": [999.0] * n,
+        }
+    )
+    return point_filemap, build_single_values_df(point_filemap)
+
+
+def test_recompute_values_at_molt_of_point_overwrites_stale_values():
+    point_filemap, single_values = make_point_with_values_at_molt()
+    result = recompute_values_at_molt_of_point(
+        point_filemap, single_values, experiment_time=False
+    )
+    assert result.select("volume_at_M1").item() == pytest.approx(60.0, rel=0.05)
+    assert result.select("volume_at_M1Entry").item() == pytest.approx(160.0, rel=0.05)
+    # unannotated event clears the stale value
+    assert np.isnan(result.select("volume_at_HatchTime").item())
+    # event times themselves are left untouched
+    assert result.select("M1").item() == 5.0
+    assert result.select("M1Entry").item() == 15.0
