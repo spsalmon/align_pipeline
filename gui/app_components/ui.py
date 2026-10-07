@@ -101,11 +101,18 @@ def create_molt_annotator(ecdysis_list_id, entry_list_id, custom_columns_choices
                         value=1300,
                     ),
                     ui.input_checkbox("log_scale", "Log scale", value=True),
-                    ui.input_file(
-                        "import_file",
-                        "Import Annotations",
-                        accept=[".csv", ".mat", ".parquet"],
-                        multiple=False,
+                    ui.div(
+                        ui.input_checkbox(
+                            "recompute_values_at_molt_on_import",
+                            "Recompute values at molt",
+                            value=True,
+                        ),
+                        ui.input_file(
+                            "import_file",
+                            "Import Annotations",
+                            accept=[".csv", ".mat", ".parquet"],
+                            multiple=False,
+                        ),
                     ),
                 ),
                 align="center",

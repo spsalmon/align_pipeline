@@ -422,6 +422,63 @@ def process_feature_at_molt_columns(
     return filemap
 
 
+def merge_imported_annotations(
+    filemap, imported_df, feature_columns, annotation_columns
+):
+    """Overlay the annotation columns of an imported filemap onto the GUI's
+    filemap and recompute every value at molt from the GUI's own features, qc
+    and time. Only the Points present in the import are returned; rows are
+    matched on (Point, Time), never by position."""
+    annotation_columns = [
+        c
+        for c in dict.fromkeys(annotation_columns)
+        if c in imported_df.columns and c not in ("Point", "Time")
+    ]
+
+    imported_annotations = imported_df.select(
+        pl.col("Point").cast(filemap.schema["Point"]),
+        pl.col("Time").cast(filemap.schema["Time"]),
+        *[pl.col(c) for c in annotation_columns],
+    )
+    imported_points = imported_annotations.select("Point").unique()
+
+    # drop the GUI's values at molt so events missing from the import end up
+    # NaN instead of keeping values computed for the GUI's previous events
+    stale_columns = annotation_columns + [
+        f"{feature_column}_at_{ecdys}"
+        for feature_column in feature_columns
+        for ecdys in VALUE_AT_COLUMNS
+    ]
+    merged = (
+        filemap.join(imported_points, on="Point", how="semi")
+        .drop([c for c in stale_columns if c in filemap.columns])
+        .join(imported_annotations, on=["Point", "Time"], how="left")
+    )
+
+    return process_feature_at_molt_columns(
+        merged, feature_columns, recompute_features_at_molt=True
+    )
+
+
+def clear_values_at_missing_events(filemap):
+    """Set every `<feature>_at_<event>` value to NaN on the rows where the
+    event itself has no time, so no stale value outlives its event."""
+    clear_exprs = []
+    for ecdys_event in VALUE_AT_COLUMNS:
+        if ecdys_event not in filemap.columns:
+            continue
+        event_time = pl.col(ecdys_event).cast(pl.Float64)
+        event_missing = event_time.is_null() | event_time.is_nan()
+        clear_exprs.extend(
+            pl.when(event_missing)
+            .then(pl.lit(np.nan))
+            .otherwise(pl.col(column).cast(pl.Float64))
+            .alias(column)
+            for column in _get_value_at_event_columns(filemap.columns, ecdys_event)
+        )
+    return filemap.with_columns(clear_exprs)
+
+
 def _get_values_at_molt(filemap, column):
     columns_at_ecdysis = [f"{column}_at_{e}" for e in VALUE_AT_COLUMNS]
 

@@ -15,8 +15,10 @@ from app_components.backend import (
     VALUE_AT_COLUMNS,
     build_single_values_df,
     check_use_experiment_time,
+    clear_values_at_missing_events,
     get_molt_interval_bands,
     get_points_for_value_at_molts,
+    merge_imported_annotations,
     populate_column_choices,
     process_feature_at_molt_columns,
     recompute_values_at_molt_of_point,
@@ -267,6 +269,44 @@ def main_server(
     def update_column_to_plot():
         column_to_plot.set(input.column_to_plot())
 
+    def _prepare_import_without_recompute(
+        imported_df, current_work_df, custom_columns_choices
+    ):
+        for col in ["Death", "Ignore", "Arrest"] + custom_columns_choices:
+            if col in imported_df.columns:
+                continue
+            if col in current_work_df.columns:
+                value = current_work_df.select(pl.col(col)).to_numpy().squeeze()
+            elif col == "Death":
+                value = np.nan
+            elif col in ("Ignore", "Arrest"):
+                value = False
+            else:
+                value = np.nan
+            imported_df = imported_df.with_columns(pl.lit(value).alias(col))
+
+        for col in ["ExperimentTime"] + feature_columns:
+            if col not in imported_df.columns and col in filemap.columns:
+                imported_df = imported_df.with_columns(
+                    pl.lit(filemap.select(pl.col(col)).to_numpy().squeeze()).alias(col)
+                )
+
+        # Always classify frames using the qc of the filemap currently open in
+        # the GUI, never the qc the imported file happens to carry. Drop any
+        # imported qc so values-at-molt are computed against the GUI's qc only.
+        imported_df = imported_df.drop(
+            [col for col in imported_df.columns if "qc" in col]
+        )
+        for col in [col for col in filemap.columns if "qc" in col]:
+            imported_df = imported_df.with_columns(
+                pl.lit(filemap.select(pl.col(col)).to_numpy().squeeze()).alias(col)
+            )
+
+        imported_df = process_feature_at_molt_columns(
+            imported_df, feature_columns, recompute_features_at_molt=False
+        )
+        return clear_values_at_missing_events(imported_df)
+
     @reactive.Effect
     @reactive.event(input.import_file)
     def import_annotations():
@@ -283,54 +323,45 @@ def main_server(
             imported_df = read_filemap(datapath)
 
             current_work_df = work_df()
-            for col in ["Death", "Ignore", "Arrest"] + custom_columns_choices:
-                if col in imported_df.columns:
-                    continue
-                if col in current_work_df.columns:
-                    value = current_work_df.select(pl.col(col)).to_numpy().squeeze()
-                elif col == "Death":
-                    value = np.nan
-                elif col in ("Ignore", "Arrest"):
-                    value = False
-                else:
-                    value = np.nan
-                imported_df = imported_df.with_columns(pl.lit(value).alias(col))
-
-            for col in ["ExperimentTime"] + feature_columns:
-                if col not in imported_df.columns and col in filemap.columns:
-                    imported_df = imported_df.with_columns(
-                        pl.lit(filemap.select(pl.col(col)).to_numpy().squeeze()).alias(
-                            col
-                        )
-                    )
-
-            # Always classify frames using the qc of the filemap currently open in
-            # the GUI, never the qc the imported file happens to carry. Drop any
-            # imported qc so values-at-molt are computed against the GUI's qc only.
-            imported_df = imported_df.drop(
-                [col for col in imported_df.columns if "qc" in col]
-            )
-            for col in [col for col in filemap.columns if "qc" in col]:
-                imported_df = imported_df.with_columns(
-                    pl.lit(filemap.select(pl.col(col)).to_numpy().squeeze()).alias(col)
+            if input.recompute_values_at_molt_on_import():
+                raw_imported_df = imported_df
+                imported_df = merge_imported_annotations(
+                    filemap,
+                    raw_imported_df,
+                    feature_columns,
+                    VALUE_AT_COLUMNS
+                    + ["Death", "Ignore", "Arrest"]
+                    + custom_columns_choices,
                 )
-
-            imported_df = process_feature_at_molt_columns(
-                imported_df, feature_columns, recompute_features_at_molt=False
-            )
+                # only overwrite the rows and annotation columns the import
+                # actually carries, so unsaved GUI edits elsewhere survive
+                import_keys = raw_imported_df.select(
+                    pl.col("Point").cast(imported_df.schema["Point"]),
+                    pl.col("Time").cast(imported_df.schema["Time"]),
+                )
+                work_import_df = imported_df.join(
+                    import_keys, on=["Point", "Time"], how="semi"
+                ).select(
+                    [c for c in imported_df.columns if c in raw_imported_df.columns]
+                )
+            else:
+                imported_df = _prepare_import_without_recompute(
+                    imported_df, current_work_df, custom_columns_choices
+                )
+                work_import_df = imported_df
 
             work_cols = list(
                 dict.fromkeys(
-                    [c for c in columns_to_get_unique if c in imported_df.columns]
+                    [c for c in columns_to_get_unique if c in work_import_df.columns]
                     + [
                         c
                         for c in ["Death", "Ignore", "Arrest"]
-                        if c in imported_df.columns
+                        if c in work_import_df.columns
                     ]
                 )
             )
             work_cols_to_update = [c for c in work_cols if c not in ("Point", "Time")]
-            new_work_df = imported_df.select(pl.col(work_cols))
+            new_work_df = work_import_df.select(pl.col(work_cols))
 
             import_keys = new_work_df.select(["Point", "Time"]).with_columns(
                 pl.lit(True).alias("_in_import")
@@ -391,6 +422,7 @@ def main_server(
                 feature_columns,
                 recompute_features_at_molt=True,
             )
+            imported_df = clear_values_at_missing_events(imported_df)
             import_single_values_df = build_single_values_df(imported_df)
 
         else:
