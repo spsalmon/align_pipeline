@@ -335,11 +335,27 @@ def build_single_values_df(filemap):
     return single_values_df
 
 
+def _ignored_frames_expr(filemap):
+    if "Ignore" not in filemap.columns:
+        return pl.lit(False)
+    return pl.col("Ignore").cast(pl.Boolean).fill_null(False)
+
+
+def get_ignored_frames(point_filemap):
+    """Boolean mask of the frames flagged with Ignore."""
+    if "Ignore" not in point_filemap.columns:
+        return np.zeros(point_filemap.height, dtype=bool)
+    return (
+        point_filemap.select(_ignored_frames_expr(point_filemap))
+        .to_series()
+        .to_numpy()
+        .astype(bool)
+    )
+
+
 def process_feature_at_molt_columns(
     filemap, feature_columns, recompute_features_at_molt=False
 ):
-    columns = filemap.columns
-
     for ecdys in VALUE_AT_COLUMNS:
         if ecdys not in filemap.columns:
             filemap = filemap.with_columns(pl.lit(np.nan).alias(ecdys))
@@ -347,14 +363,34 @@ def process_feature_at_molt_columns(
     if "ExperimentTime" not in filemap.columns:
         filemap = fix_experiment_time(filemap)
 
+    filemap = filemap.with_columns(
+        [pl.col(feature_column).cast(pl.Float64) for feature_column in feature_columns]
+        + [
+            pl.lit(np.nan).alias(f"{feature_column}_at_{ecdys}")
+            for feature_column in feature_columns
+            for ecdys in VALUE_AT_COLUMNS
+            if f"{feature_column}_at_{ecdys}" not in filemap.columns
+        ]
+    )
+
+    # values at molt are computed without the ignored frames, like the
+    # plotting structure of align_toolbox does; fully ignored points keep
+    # their stored values
+    kept_filemap = filemap.filter(~_ignored_frames_expr(filemap))
+    if kept_filemap.height == 0:
+        return filemap
+
     (
         time,
         experiment_time,
         ecdysis_index,
-    ) = get_time_and_ecdysis(filemap)
+    ) = get_time_and_ecdysis(kept_filemap)
 
     unique_points = (
-        filemap.select(pl.col("Point")).unique(maintain_order=True).to_numpy().squeeze()
+        kept_filemap.select(pl.col("Point"))
+        .unique(maintain_order=True)
+        .to_numpy()
+        .squeeze()
     )
 
     if unique_points.ndim == 0:
@@ -363,27 +399,21 @@ def process_feature_at_molt_columns(
     qc_columns = [column for column in filemap.columns if "qc" in column]
 
     for feature_column in feature_columns:
-        # convert the feature column to float
-        filemap = filemap.with_columns(pl.col(feature_column).cast(pl.Float64))
-
-        series = separate_column_by_point(filemap, feature_column)
+        series = separate_column_by_point(kept_filemap, feature_column)
         if len(qc_columns) == 0:
             # No qc column at all: treat every timepoint as a valid worm, matching
             # the placeholder_qc default in populate_column_choices.
             qcs = np.full(series.shape, "worm", dtype=object)
         elif len(qc_columns) == 1:
-            qcs = separate_column_by_point(filemap, qc_columns[0])
+            qcs = separate_column_by_point(kept_filemap, qc_columns[0])
         else:
             qc_column = find_best_string_match(feature_column, qc_columns)
-            qcs = separate_column_by_point(filemap, qc_column)
+            qcs = separate_column_by_point(kept_filemap, qc_column)
         feature_at_ecdysis_columns = [
             f"{feature_column}_at_{ecdys}" for ecdys in VALUE_AT_COLUMNS
         ]
-        for column in feature_at_ecdysis_columns:
-            if column not in columns:
-                filemap = filemap.with_columns(pl.lit(np.nan).alias(column))
 
-        series_at_ecdysis = _get_values_at_molt(filemap, feature_column)
+        series_at_ecdysis = _get_values_at_molt(kept_filemap, feature_column)
 
         new_series_at_ecdysis = _compute_series_at_molt(
             series,
@@ -414,10 +444,15 @@ def process_feature_at_molt_columns(
                     for j in range(len(feature_at_ecdysis_columns))
                 },
             }
-        )
+        ).with_columns(pl.col("Point").cast(filemap.schema["Point"]))
 
-        filemap = filemap.drop(feature_at_ecdysis_columns)
-        filemap = filemap.join(updated_df, on="Point", how="left")
+        filemap = filemap.join(
+            updated_df, on="Point", how="left", suffix="_new", maintain_order="left"
+        )
+        filemap = filemap.with_columns(
+            pl.coalesce(pl.col(f"{column}_new"), pl.col(column)).alias(column)
+            for column in feature_at_ecdysis_columns
+        ).drop([f"{column}_new" for column in feature_at_ecdysis_columns])
 
     return filemap
 
@@ -533,6 +568,15 @@ def update_molt_and_ecdysis_columns(
 
     qc_columns = [col for col in point_filemap.columns if "qc" in col]
 
+    # the ignored frames are left out of the smoothing, and an event on an
+    # ignored frame has no value, like in the plotting structure of align_toolbox
+    kept_frames = ~get_ignored_frames(point_filemap)
+    has_value = (
+        not np.isnan(new_time)
+        and not np.isnan(new_time_index)
+        and kept_frames[int(new_time_index)]
+    )
+
     for value_column, value_at_ecdys_column in zip(
         value_columns, value_at_ecdys_columns
     ):
@@ -541,17 +585,17 @@ def update_molt_and_ecdysis_columns(
         else:
             qc_column = find_best_string_match(value_column, qc_columns)
             qc_values = point_filemap.select(pl.col(qc_column)).to_numpy().squeeze()
-        if np.isnan(new_time_index):
+        if not has_value:
             new_value_at_ecdys = np.nan
         else:
             series = (
                 point_filemap.select(pl.col(value_column)).to_numpy().squeeze().copy()
             )
             new_value_at_ecdys = compute_series_at_time_classified(
-                series,
+                series[kept_frames],
                 time[int(new_time_index)],
-                time,
-                qc_values,
+                time[kept_frames],
+                qc_values[kept_frames],
             )
 
         single_values_df = single_values_df.with_columns(
@@ -643,6 +687,8 @@ def _compute_series_at_molt(
 
     if recompute_values_at_molt:
         values_to_recompute_mask = non_nan_indexes_ecdysis_mask
+        # an event whose frame is missing (e.g. ignored) has no value
+        new_series_at_ecdysis[~non_nan_indexes_ecdysis_mask] = np.nan
     else:
         values_to_recompute_mask = (
             nan_indexes_values_mask & non_nan_indexes_ecdysis_mask

@@ -150,10 +150,30 @@ def main_server(
         "time", choices=times, clicked_value=clicked_time
     )
 
+    def point_filemap_with_current_ignore(point_index, current_work_df):
+        """The point's filemap with the Ignore flags currently set in the GUI,
+        so values at molt leave out the frames ignored since loading."""
+        point_filemap = point_filemaps[point_index]
+        if "Ignore" not in current_work_df.columns:
+            return point_filemap
+        point = point_filemap.select(pl.col("Point").first()).item()
+        ignore = current_work_df.filter(pl.col("Point") == point).select(
+            "Time", "Ignore"
+        )
+        return point_filemap.drop("Ignore", strict=False).join(
+            ignore, on="Time", how="left", maintain_order="left"
+        )
+
+    # separate from current_point_filemap so that editing work_df does not
+    # re-render the image and the curve
+    @reactive.calc
+    def current_point_filemap_with_ignore():
+        return point_filemap_with_current_ignore(int(current_point_index()), work_df())
+
     [
         molt_annotation_buttons_server(
             molt_name,
-            current_point_filemap,
+            current_point_filemap_with_ignore,
             single_values_of_point,
             column_to_plot,
             current_time,
@@ -173,7 +193,7 @@ def main_server(
     [
         molt_annotation_buttons_server(
             molt_name,
-            current_point_filemap,
+            current_point_filemap_with_ignore,
             single_values_of_point,
             column_to_plot,
             current_time,
@@ -590,9 +610,8 @@ def main_server(
     @reactive.Effect
     @reactive.event(input.recompute_values_at_molt_point)
     def recompute_values_at_molt_point():
-        point_index = int(current_point_index())
         new_single_values = recompute_values_at_molt_of_point(
-            point_filemaps[point_index],
+            current_point_filemap_with_ignore(),
             single_values_of_point(),
             experiment_time=use_experiment_time,
         )
@@ -609,13 +628,12 @@ def main_server(
         all_single_values = list(single_values_of_points())
         all_single_values[point_index] = single_values_of_point()
 
+        current_work_df = work_df()
         with ui.Progress(min=0, max=len(all_single_values)) as progress:
             progress.set(message="Recomputing values at molt ...")
-            for i, (point_filemap, point_single_values) in enumerate(
-                zip(point_filemaps, all_single_values)
-            ):
+            for i, point_single_values in enumerate(all_single_values):
                 all_single_values[i] = recompute_values_at_molt_of_point(
-                    point_filemap,
+                    point_filemap_with_current_ignore(i, current_work_df),
                     point_single_values,
                     experiment_time=use_experiment_time,
                 )

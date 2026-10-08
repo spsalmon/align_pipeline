@@ -1,6 +1,7 @@
 import numpy as np
 import polars as pl
 import pytest
+from align_toolbox.data_analysis import compute_series_at_time_classified
 from app_components.backend import (
     MOLT_ENTRY_COLUMNS,
     _drop_join_artifact_columns,
@@ -331,3 +332,75 @@ def test_recompute_values_at_molt_of_point_overwrites_stale_values():
     # event times themselves are left untouched
     assert result.select("M1").item() == 5.0
     assert result.select("M1Entry").item() == 15.0
+
+
+# --- ignored frames are left out of the values at molt ---
+
+N_IGNORE_TEST = 20
+FIRST_IGNORED_TIME = 15
+
+
+def make_point_with_ignored_tail(point=0):
+    """Frames from FIRST_IGNORED_TIME on are ignored and hold junk volumes."""
+    times = np.arange(N_IGNORE_TEST)
+    return pl.DataFrame(
+        {
+            "Time": times,
+            "Point": [point] * N_IGNORE_TEST,
+            "ExperimentTime": [np.nan] * N_IGNORE_TEST,
+            "qc": ["worm"] * N_IGNORE_TEST,
+            "volume": np.where(times < FIRST_IGNORED_TIME, 10.0 * (times + 1), 5000.0),
+            "Ignore": times >= FIRST_IGNORED_TIME,
+            "HatchTime": [np.nan] * N_IGNORE_TEST,
+            "M1": [13.0] * N_IGNORE_TEST,
+            "M2": [17.0] * N_IGNORE_TEST,
+            "volume_at_M1": [999.0] * N_IGNORE_TEST,
+            "volume_at_M2": [999.0] * N_IGNORE_TEST,
+        }
+    )
+
+
+def _expected_volume_without_ignored_frames(point_filemap, time):
+    kept = point_filemap.filter(~pl.col("Ignore"))
+    return compute_series_at_time_classified(
+        kept["volume"].to_numpy().copy(),
+        float(time),
+        kept["Time"].to_numpy().astype(float),
+        kept["qc"].to_numpy(),
+    )
+
+
+def test_recompute_values_at_molt_of_point_leaves_out_ignored_frames():
+    point_filemap = make_point_with_ignored_tail()
+    result = recompute_values_at_molt_of_point(
+        point_filemap, build_single_values_df(point_filemap), experiment_time=False
+    )
+    assert result.select("volume_at_M1").item() == pytest.approx(
+        _expected_volume_without_ignored_frames(point_filemap, 13).item()
+    )
+    # a molt on an ignored frame has no value, but keeps its time
+    assert np.isnan(result.select("volume_at_M2").item())
+    assert result.select("M2").item() == 17.0
+
+
+def test_process_feature_at_molt_columns_leaves_out_ignored_frames():
+    filemap = pl.concat(
+        [
+            make_point_with_ignored_tail(point=0),
+            make_point_with_ignored_tail(point=1).with_columns(
+                pl.lit(True).alias("Ignore")
+            ),
+        ]
+    )
+    result = process_feature_at_molt_columns(
+        filemap, ["volume"], recompute_features_at_molt=True
+    )
+    point_0 = result.filter(pl.col("Point") == 0)
+    assert point_0["volume_at_M1"][0] == pytest.approx(
+        _expected_volume_without_ignored_frames(point_0, 13).item()
+    )
+    assert np.isnan(point_0["volume_at_M2"][0])
+    # a fully ignored point keeps its stored values
+    point_1 = result.filter(pl.col("Point") == 1)
+    assert point_1["volume_at_M1"][0] == 999.0
+    assert point_1.height == N_IGNORE_TEST
