@@ -10,6 +10,18 @@ def main():
     parser.add_argument("--filemap", type=str, default=None)
     parser.add_argument("--no-annotated", action="store_true")
     parser.add_argument("--recompute", action="store_true")
+    parser.add_argument(
+        "--no-preload",
+        action="store_true",
+        help="Do not preload a point's images into RAM; read each frame on demand.",
+    )
+    parser.add_argument(
+        "--preload-min-free-mb",
+        type=float,
+        default=None,
+        help="Stop preloading when available RAM drops below this many MB "
+        "(default: 10%% of total RAM, at least 1024 MB).",
+    )
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument("--host", type=str, default="127.0.0.1")
 
@@ -20,6 +32,9 @@ def main():
         env["FILEMAP_PATH"] = args.filemap
     env["OPEN_ANNOTATED"] = "0" if args.no_annotated else "1"
     env["RECOMPUTE_FEATURES"] = "1" if args.recompute else "0"
+    env["PRELOAD_IMAGES"] = "0" if args.no_preload else "1"
+    if args.preload_min_free_mb is not None:
+        env["PRELOAD_MIN_FREE_MB"] = str(args.preload_min_free_mb)
 
     app_dir = os.path.dirname(os.path.abspath(__file__))
 

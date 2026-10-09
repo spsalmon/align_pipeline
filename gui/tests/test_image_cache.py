@@ -5,17 +5,19 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from app_components.image_cache import BackgroundLoader
-from app_components.image_cache import PointImageCache
-from app_components.image_cache import ProgressTracker
-from app_components.image_cache import alpha_composite
-from app_components.image_cache import apply_lut
-from app_components.image_cache import array_to_data_url
-from app_components.image_cache import compose_display_image
-from app_components.image_cache import composite_mask
-from app_components.image_cache import downsample
-from app_components.image_cache import extract_channel
-from app_components.image_cache import prepare_channel
+from app_components.image_cache import (
+    BackgroundLoader,
+    PointImageCache,
+    ProgressTracker,
+    alpha_composite,
+    apply_lut,
+    array_to_data_url,
+    compose_display_image,
+    composite_mask,
+    downsample,
+    extract_channel,
+    prepare_channel,
+)
 
 
 class TestPointImageCache:
@@ -101,6 +103,14 @@ class TestProgressTracker:
         assert completed == 2
         assert total == 10
 
+    def test_stop_reason_cleared_on_reset(self):
+        tracker = ProgressTracker()
+        tracker.reset(total=10)
+        tracker.stop("low memory")
+        assert tracker.stop_reason() == "low memory"
+        tracker.reset(total=10)
+        assert tracker.stop_reason() is None
+
     def test_reset_clears_completed(self):
         tracker = ProgressTracker()
         tracker.reset(total=10)
@@ -172,6 +182,11 @@ class TestApplyLut:
         for name in ("viridis", "magma", "autumn"):
             rgb = apply_lut(img, name)
             assert rgb.shape == (4, 4, 3)
+
+    def test_uint8_matches_float(self):
+        img_u8 = np.arange(256, dtype=np.uint8).reshape(16, 16)
+        img_f = img_u8.astype(np.float32) / 255
+        np.testing.assert_array_equal(apply_lut(img_u8), apply_lut(img_f))
 
 
 class TestAlphaComposite:
@@ -246,14 +261,20 @@ class TestPrepareChannel:
     def test_output_dtype_and_range(self):
         channel_img = np.array([[0, 100], [200, 65535]], dtype=np.uint16)
         result = prepare_channel(channel_img)
-        assert result.dtype == np.float32
-        assert result.min() >= 0.0
-        assert result.max() <= 1.0
+        assert result.dtype == np.uint8
+        assert result.min() == 0
+        assert result.max() == 255
 
     def test_large_image_downsampled(self):
         channel_img = np.random.randint(0, 65535, (2048, 2048), dtype=np.uint16)
         result = prepare_channel(channel_img)
         assert max(result.shape) <= 768
+
+    def test_does_not_keep_full_resolution_alive(self):
+        channel_img = np.random.randint(0, 65535, (2048, 2048), dtype=np.uint16)
+        result = prepare_channel(channel_img)
+        assert result.nbytes == result.size
+        assert result.base is None or result.base.nbytes == result.nbytes
 
 
 class TestBackgroundLoader:
@@ -288,7 +309,7 @@ class TestBackgroundLoader:
             for ch in range(n_channels):
                 arr = cache.get(t, ch)
                 assert arr is not None
-                assert arr.dtype == np.float32
+                assert arr.dtype == np.uint8
                 assert max(arr.shape) <= 768
 
     def test_cancel_stops_workers(self):
@@ -407,6 +428,74 @@ class TestBackgroundLoader:
         completed, total = tracker.get()
         assert completed == n_frames
         assert total == n_frames
+        assert tracker.stop_reason() is None
+
+    def test_stops_when_memory_low(self):
+        cache = PointImageCache()
+        tracker = ProgressTracker()
+        n_frames = 5
+        fake_img = self._make_fake_tiff(1)
+
+        cache.reset(point=0)
+        tracker.reset(total=n_frames)
+        paths = [f"/fake/{i}.tif" for i in range(n_frames)]
+
+        with (
+            patch(
+                "app_components.image_cache.image_handling.read_tiff_file",
+                return_value=fake_img,
+            ) as read,
+            patch(
+                "app_components.image_cache.available_memory_bytes",
+                return_value=100,
+            ),
+        ):
+            loader = BackgroundLoader(
+                point=0,
+                image_paths=paths,
+                n_channels=1,
+                cache=cache,
+                progress_tracker=tracker,
+                min_available_bytes=1000,
+            )
+            loader.wait()
+
+        read.assert_not_called()
+        assert len(cache) == 0
+        assert tracker.stop_reason() == "low memory"
+
+    def test_keeps_loading_when_memory_sufficient(self):
+        cache = PointImageCache()
+        tracker = ProgressTracker()
+        n_frames = 5
+        fake_img = self._make_fake_tiff(1)
+
+        cache.reset(point=0)
+        tracker.reset(total=n_frames)
+        paths = [f"/fake/{i}.tif" for i in range(n_frames)]
+
+        with (
+            patch(
+                "app_components.image_cache.image_handling.read_tiff_file",
+                return_value=fake_img,
+            ),
+            patch(
+                "app_components.image_cache.available_memory_bytes",
+                return_value=10_000,
+            ),
+        ):
+            loader = BackgroundLoader(
+                point=0,
+                image_paths=paths,
+                n_channels=1,
+                cache=cache,
+                progress_tracker=tracker,
+                min_available_bytes=1000,
+            )
+            loader.wait()
+
+        assert len(cache) == n_frames
+        assert tracker.stop_reason() is None
 
 
 class TestComposeDisplayImage:

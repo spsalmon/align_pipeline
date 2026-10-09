@@ -56,6 +56,8 @@ def main_server(
     custom_columns_choices=None,
     default_plotted_column=None,
     n_channels=None,
+    preload_images=True,
+    preload_min_available_bytes=None,
 ):
     use_experiment_time = check_use_experiment_time(filemap)
     point_filemaps = filemap.partition_by("Point", maintain_order=True)
@@ -74,6 +76,8 @@ def main_server(
         else:
             paths = [p for p in paths.tolist() if p is not None]
         _image_cache.reset(point=point_index)
+        if not preload_images:
+            return
         _progress_tracker.reset(total=len(paths))
         _current_loader[0] = BackgroundLoader(
             point=point_index,
@@ -81,6 +85,7 @@ def main_server(
             n_channels=n_channels,
             cache=_image_cache,
             progress_tracker=_progress_tracker,
+            min_available_bytes=preload_min_available_bytes,
         )
 
     work_df_columns = [
@@ -254,14 +259,24 @@ def main_server(
         single_values_of_point.set(single_values_of_points()[point_index])
         _start_loading(point_index)
 
-    @reactive.poll(lambda: _progress_tracker.get(), interval_secs=0.5)
+    def _progress_state():
+        return _progress_tracker.get(), _progress_tracker.stop_reason()
+
+    @reactive.poll(_progress_state, interval_secs=0.5)
     def _current_progress():
-        return _progress_tracker.get()
+        return _progress_state()
 
     @output
     @render.ui
     def preload_progress():
-        completed, total = _current_progress()
+        (completed, total), stop_reason = _current_progress()
+        if stop_reason is not None:
+            return ui.p(
+                f"Pre-loading stopped ({stop_reason}) after {completed} / {total} "
+                "frames; remaining frames are read from disk.",
+                class_="small text-warning mb-1",
+                style="margin: 0;",
+            )
         if total == 0 or completed >= total:
             return ui.div()
         pct = (completed / total) * 100

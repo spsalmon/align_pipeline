@@ -11,9 +11,14 @@ import numpy as np
 from align_toolbox.foundation import image_handling
 from PIL import Image as PILImage
 
+try:
+    import psutil
+except ImportError:  # memory guard is disabled without psutil
+    psutil = None
+
 
 class PointImageCache:
-    """Thread-safe store of downsampled float32 channel arrays, keyed by (time_index, channel_idx)."""
+    """Thread-safe store of downsampled uint8 channel arrays, keyed by (time_index, channel_idx)."""
 
     def __init__(self):
         self._lock = threading.Lock()
@@ -49,11 +54,21 @@ class ProgressTracker:
         self._lock = threading.Lock()
         self._completed = 0
         self._total = 0
+        self._stop_reason: str | None = None
 
     def reset(self, total: int) -> None:
         with self._lock:
             self._completed = 0
             self._total = total
+            self._stop_reason = None
+
+    def stop(self, reason: str) -> None:
+        with self._lock:
+            self._stop_reason = reason
+
+    def stop_reason(self) -> str | None:
+        with self._lock:
+            return self._stop_reason
 
     def increment(self) -> None:
         with self._lock:
@@ -81,8 +96,10 @@ def downsample(img: np.ndarray) -> np.ndarray:
 
 
 def apply_lut(img: np.ndarray, cmap_name: str = "viridis") -> np.ndarray:
-    """Convert a float32 [0, 1] 2-D array to an RGB uint8 array using a pre-built LUT."""
+    """Convert a uint8 or float32 [0, 1] 2-D array to an RGB uint8 array using a pre-built LUT."""
     lut = COLORMAPS[cmap_name]
+    if img.dtype == np.uint8:
+        return lut[img]
     u8 = (np.clip(img, 0.0, 1.0) * 255).astype(np.uint8)
     return lut[u8]
 
@@ -132,9 +149,31 @@ def extract_channel(img: np.ndarray, channel: int) -> np.ndarray:
 
 
 def prepare_channel(channel_img: np.ndarray) -> np.ndarray:
-    """Normalize a single channel to float32 [0, 1] and downsample for display."""
-    normalized = image_handling.normalize_image(channel_img, dest_dtype=np.float32)
-    return downsample(normalized)
+    """Downsample a single channel for display and normalize it to uint8.
+
+    The downsampled array is copied so the result does not keep the full-resolution
+    image alive (a strided view would), and uint8 is all the display LUT needs.
+    """
+    small = np.ascontiguousarray(downsample(channel_img))
+    return image_handling.normalize_image(small, dest_dtype=np.uint8)
+
+
+def default_min_available_bytes() -> int:
+    """Free-RAM floor below which preloading stops: 10% of total RAM, at least 1 GiB."""
+    floor = 1024**3
+    if psutil is None:
+        return floor
+    return max(floor, psutil.virtual_memory().total // 10)
+
+
+def available_memory_bytes() -> int | None:
+    """System-wide available RAM, or None if it cannot be measured."""
+    if psutil is None:
+        return None
+    try:
+        return psutil.virtual_memory().available
+    except Exception:
+        return None
 
 
 def compose_display_image(
@@ -164,7 +203,11 @@ def array_to_data_url(rgb: np.ndarray, quality: int = 85) -> str:
 
 
 class BackgroundLoader:
-    """Reads all TIFFs for a point in background threads and populates a PointImageCache."""
+    """Reads all TIFFs for a point in background threads and populates a PointImageCache.
+
+    If ``min_available_bytes`` is set, loading stops (keeping what is already cached)
+    as soon as the system's available RAM drops below it.
+    """
 
     def __init__(
         self,
@@ -174,8 +217,10 @@ class BackgroundLoader:
         cache: PointImageCache,
         progress_tracker: ProgressTracker,
         n_workers: int = 4,
+        min_available_bytes: int | None = None,
     ):
         self._cancel = threading.Event()
+        self._min_available_bytes = min_available_bytes
         self._executor = ThreadPoolExecutor(max_workers=n_workers)
         self._futures = [
             self._executor.submit(
@@ -194,6 +239,12 @@ class BackgroundLoader:
     def cancel(self) -> None:
         self._cancel.set()
 
+    def _memory_low(self) -> bool:
+        if self._min_available_bytes is None:
+            return False
+        available = available_memory_bytes()
+        return available is not None and available < self._min_available_bytes
+
     def wait(self) -> None:
         """Block until all submitted futures are done. Used in tests."""
         futures_wait(self._futures)
@@ -208,6 +259,14 @@ class BackgroundLoader:
         progress_tracker: ProgressTracker,
     ) -> None:
         if self._cancel.is_set():
+            return
+        if self._memory_low():
+            self._cancel.set()
+            progress_tracker.stop("low memory")
+            print(
+                "BackgroundLoader: available RAM below "
+                f"{self._min_available_bytes / 1024**3:.1f} GiB, stopping preload."
+            )
             return
         try:
             img = image_handling.read_tiff_file(path)
