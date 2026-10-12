@@ -5,6 +5,7 @@ database_configs: {
       'size': 3000,
       'stage_proportions': {'L1': 0.25, 'L2': 0.25, 'L3': 0.25, 'L4': 0.25,},
       'organ': 'pharynx',
+      'scope_proportions': {'squid': 0.5, 'ti2': 0.5},
   },
 }
 

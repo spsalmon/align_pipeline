@@ -89,6 +89,12 @@ experiments_to_exclude: []
     values are not otherwise used): setting it restricts the scan to
     GUI-annotated filemaps (`analysis_filemap_annotated`) instead of all
     filemaps.
+  - **scope_proportions** : optional. The target proportion of images from
+    each microscope, keyed by the canonical scope names of `scopes_alt_names`
+    (e.g. `{'squid': 0.5, 'ti2': 0.5}`). It combines with `class_proportions`:
+    each (scope, class) pair gets `size * scope_prop * class_prop` images.
+    Microscopes missing from the mapping are left out of the dataset. Leave it
+    out to sample regardless of the microscope.
 - **class_proportions** : the target proportion of each class
   (`error`, `potential_error`, `good`, `egg`). Set to `null` for unlabelled
   mode.

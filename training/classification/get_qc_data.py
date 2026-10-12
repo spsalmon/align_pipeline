@@ -450,6 +450,50 @@ def get_images_from_filemap(
     return database
 
 
+def sample_database(database, total_images, class_proportions, scope_proportions):
+    """Sample ``total_images`` rows of the gathered database.
+
+    ``class_proportions`` and ``scope_proportions`` (keyed by the unified
+    microscope name) are optional. When both are set, each (scope, class) pair
+    gets ``total_images * scope_prop * class_prop`` images. Scopes missing from
+    ``scope_proportions`` are dropped. A group with fewer images than requested
+    contributes all of its images.
+    """
+    if scope_proportions:
+        groups = [
+            (pl.col("Microscope") == scope, prop, scope)
+            for scope, prop in scope_proportions.items()
+        ]
+    else:
+        groups = [(pl.lit(True), 1.0, None)]
+
+    if class_proportions:
+        groups = [
+            (
+                scope_filter & (pl.col("Class") == cls),
+                scope_prop * class_prop,
+                (scope, cls),
+            )
+            for scope_filter, scope_prop, scope in groups
+            for cls, class_prop in class_proportions.items()
+        ]
+
+    sampled_database = pl.DataFrame(schema=DATABASE_SCHEMA)
+    for group_filter, prop, group in groups:
+        count = int(total_images * prop)
+        group_images = database.filter(group_filter)
+        if group is not None and group_images.height < count:
+            print(
+                f"Only {group_images.height} images available for {group}, "
+                f"{count} requested."
+            )
+        n = min(count, group_images.height)
+        sampled_database = sampled_database.vstack(
+            group_images.sample(n, with_replacement=False)
+        )
+    return sampled_database
+
+
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", help="Path to the config file", required=True)
@@ -580,26 +624,15 @@ if __name__ == "__main__":
             #     continue
 
         total_images = database_config.get("size", 1000)
+        sampled_database = sample_database(
+            database,
+            total_images,
+            class_proportions,
+            database_config.get("scope_proportions", None),
+        )
         if get_classes:
-            # calculate number of images per class
-            class_counts = {}
-
-            for cls, prop in class_proportions.items():
-                class_counts[cls] = int(total_images * prop)
-            # sample images per class
-            sampled_database = pl.DataFrame(
-                schema=DATABASE_SCHEMA,
-            )
-            for cls, count in class_counts.items():
-                class_images = database.filter(pl.col("Class") == cls)
-                n = min(count, class_images.height)
-                class_images = class_images.sample(n, with_replacement=False)
-                sampled_database = sampled_database.vstack(class_images)
-
             # sort the dataset by class to group similar images together
             sampled_database = sampled_database.sort("Class")
-        else:
-            sampled_database = database.sample(total_images, with_replacement=False)
 
         # create output names
         def get_output_name(i, row):
