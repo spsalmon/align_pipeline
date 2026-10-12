@@ -6,22 +6,21 @@ dataset_path: "/mnt/towbin.data/shared/spsalmon/towbinlab_classification_databas
 output_path: "/mnt/towbin.data/shared/spsalmon/towbinlab_classification_database/models_new/10x_pharynx_qc/"
 
 # Output file names written inside output_path.
-model_name: "qc_xgb_model.pkl"        # joblib bundle consumed by the quality_control block
+model_name: "qc_xgb_model.pkl"
 qc_classifier_name: "qc_xgb_model.json"
 egg_classifier_name: "egg_xgb_model.json"
 
-# Run Bayesian hyperparameter optimization before fitting the final model.
 optimize_hyperparameters: true
-# Compute features from the masks only (ignore the intensity image).
 mask_only: false
-# Also train a separate egg vs. non-egg classifier alongside the QC model.
 train_egg_detector: false
-# Recompute cached features even if features.csv already exists.
+
+pixelsizes: {'squid': 0.864, 'ti2': 0.65}
+
 rerun_feature_extraction: true
 
-# Bayesian optimization budget (only used when optimize_hyperparameters is true).
+# hyperparameter optimization settings
 n_points: 10
-n_iter: 50 # applies to both the QC model and the optional egg model
+n_iter: 50
 
 # Fraction of samples held out for validation, and the split seed.
 test_split_ratio: 0.2

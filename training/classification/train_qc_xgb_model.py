@@ -22,6 +22,40 @@ def get_args():
     return args
 
 
+def get_scope_pixelsize(image_path, pixelsizes):
+    """Return the pixel size of the scope an image was acquired on.
+
+    The scope is read from the image name, which ``get_qc_data.py`` saves as
+    ``image_{i}_{class}_{scope}.tiff``. Returns ``None`` when ``pixelsizes`` is
+    not set, so features stay in pixels as for models trained before pixel sizes
+    were taken into account.
+    """
+    if pixelsizes is None:
+        return None
+    stem = os.path.splitext(os.path.basename(image_path))[0]
+    # longest match first, so that e.g. "ti2_fast" wins over "fast"
+    for scope in sorted(pixelsizes, key=len, reverse=True):
+        if stem.endswith(f"_{scope}"):
+            return float(pixelsizes[scope])
+    raise ValueError(
+        f"Could not find the scope of {image_path} in pixelsizes "
+        f"({list(pixelsizes)}). Add its scope to the pixelsizes of the config."
+    )
+
+
+def cached_features_match(processed_annotation_csv_path, pixelsizes):
+    """Check that cached features were computed with the current pixel sizes."""
+    cached_df = pd.read_csv(processed_annotation_csv_path)
+    if "PixelSize" not in cached_df.columns:
+        return pixelsizes is None
+    expected = cached_df["ImagePath"].apply(
+        lambda x: get_scope_pixelsize(x, pixelsizes)
+    )
+    return np.allclose(
+        expected.astype(float), cached_df["PixelSize"].astype(float), equal_nan=True
+    )
+
+
 def train_xgb_model(
     train_X,
     train_y,
@@ -137,6 +171,7 @@ if __name__ == "__main__":
     n_iter = config.get("n_iter", 50)
     test_split_ratio = config.get("test_split_ratio", 0.2)
     random_state = config.get("random_state", 42)
+    pixelsizes = config.get("pixelsizes", None)
 
     # keep a copy of the config next to the trained model
     shutil.copy(config_file, output_path)
@@ -177,27 +212,37 @@ if __name__ == "__main__":
     processed_annotation_csv_path = os.path.join(
         dataset_path, "processed_annotations.csv"
     )
-    if (
+    use_cached_features = (
         os.path.exists(features_df_path)
         and os.path.exists(processed_annotation_csv_path)
-    ) and not rerun_feature_extraction:
+        and not rerun_feature_extraction
+    )
+    if use_cached_features and not cached_features_match(
+        processed_annotation_csv_path, pixelsizes
+    ):
+        print("Cached features were computed with other pixel sizes, recomputing.")
+        use_cached_features = False
+
+    if use_cached_features:
         annotations_df = pd.read_csv(processed_annotation_csv_path)
         features_df = pd.read_csv(features_df_path)
     else:
-        if mask_only:
-            X = Parallel(n_jobs=-1)(
-                delayed(compute_qc_features)(row["MaskPath"], None)
-                for _, row in tqdm(
-                    annotations_df.iterrows(), total=annotations_df.shape[0]
-                )
+        image_pixelsizes = [
+            get_scope_pixelsize(image_path, pixelsizes)
+            for image_path in annotations_df["ImagePath"]
+        ]
+        annotations_df["PixelSize"] = image_pixelsizes
+        X = Parallel(n_jobs=-1)(
+            delayed(compute_qc_features)(
+                row["MaskPath"],
+                None if mask_only else row["ImagePath"],
+                pixelsize=pixelsize,
             )
-        else:
-            X = Parallel(n_jobs=-1)(
-                delayed(compute_qc_features)(row["MaskPath"], row["ImagePath"])
-                for _, row in tqdm(
-                    annotations_df.iterrows(), total=annotations_df.shape[0]
-                )
+            for (_, row), pixelsize in tqdm(
+                zip(annotations_df.iterrows(), image_pixelsizes),
+                total=annotations_df.shape[0],
             )
+        )
         valid_indices = [i for i, x in enumerate(X) if x is not None]
         X = [X[i] for i in valid_indices]
         annotations_df = annotations_df.iloc[valid_indices].reset_index(drop=True)
@@ -287,6 +332,7 @@ if __name__ == "__main__":
             "egg_classes": egg_classes,
             "qc_classes": qc_classes,
             "mask_only": mask_only,
+            "pixelsizes": pixelsizes,
         }
         dump(to_save, os.path.join(output_path, model_name))
     else:
@@ -324,5 +370,6 @@ if __name__ == "__main__":
             "qc_model_path": qc_classifier_name,
             "qc_classes": classes,
             "mask_only": mask_only,
+            "pixelsizes": pixelsizes,
         }
         dump(to_save, os.path.join(output_path, model_name))
