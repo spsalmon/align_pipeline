@@ -42,6 +42,8 @@ mask_only: false
 train_egg_detector: false
 rerun_feature_extraction: true
 
+pixelsizes: {'squid': 0.864, 'ti2': 0.65}
+
 n_points: 10
 n_iter: 50
 
@@ -53,8 +55,8 @@ random_state: 42
 - **output_path** : where the trained model bundle and classifiers are written.
   A copy of the config is saved here too.
 - **model_name** : the joblib bundle the pipeline loads. It records the
-  classifier file name(s), the class list, and whether the model is
-  `mask_only`.
+  classifier file name(s), the class list, whether the model is `mask_only`
+  and the `pixelsizes` it was trained with.
 - **qc_classifier_name** / **egg_classifier_name** : file names of the raw
   XGBoost classifiers inside `output_path` (`egg_classifier_name` is only
   written when `train_egg_detector` is true).
@@ -67,7 +69,16 @@ random_state: 42
   classifier and fold the remaining classes into `worm`/`error` for the QC
   model. Off by default.
 - **rerun_feature_extraction** : recompute features even if `features.csv`
-  already exists.
+  already exists. Features are always recomputed if they were cached with other
+  `pixelsizes`.
+- **pixelsizes** : the physical size of a pixel (in µm) of each scope, keyed by
+  the scope name. The dataset gathering script saves the scope in each image
+  name (`image_{i}_{class}_{scope}.tiff`), so every image automatically gets the
+  pixel size of the scope it was acquired on. Size features (length, area, etc.)
+  are then computed in µm, which makes them comparable across scopes. Every
+  image must match one of the scopes, otherwise training stops with an error.
+  Defaults to `null`: features stay in pixels, as for models trained before
+  pixel sizes were taken into account. The values are stored in the bundle.
 - **n_points** / **n_iter** : the Bayesian optimization budget (initial random
   points and optimization iterations). Only used when
   `optimize_hyperparameters` is true.
@@ -99,13 +110,19 @@ building_blocks:
 qc_masks: [ "analysis/ch2_seg_str" ]
 qc_images: [ [ "analysis/ch2_raw_str", null ] ]
 qc_model_path: [ "/path/to/qc_xgb_model.pkl" ]
+pixelsize: [ 0.65 ]
 ```
+
+If the model was trained with `pixelsizes`, the block computes the features in
+µm using the experiment's `pixelsize` (the same option as for the morphology
+computation), and fails if it isn't set. For models trained without
+`pixelsizes`, `pixelsize` is ignored.
 
 There is no separate "method" option: the block always loads the joblib
 bundle at `qc_model_path` and uses whichever classifier(s) it points to. See
 `OPTIONS_MAP["quality_control"]` in `align_pipeline/building_blocks.py` for
 the full list of accepted keys (`qc_masks`, `qc_images`, `qc_model_path`,
-`qc_import_eggs_from`, `rerun_quality_control`).
+`qc_import_eggs_from`, `pixelsize`, `rerun_quality_control`).
 
 The default checkpoints shipped with the pipeline live under
 `align_pipeline/defaults/models/10x_body_qc/` and

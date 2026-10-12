@@ -59,6 +59,7 @@ OPTIONS_MAP = {
         "qc_masks",
         "qc_model_path",
         "qc_import_eggs_from",
+        "pixelsize",
     ],
     "molt_detection": [
         "rerun_molt_detection",
@@ -111,6 +112,8 @@ DEFAULT_OPTIONS = {
     "quality_control": {
         "rerun_quality_control": [False],
         "qc_import_eggs_from": [None],
+        # only used by models trained with pixel sizes, see the QC worker
+        "pixelsize": [None],
     },
     "molt_detection": {
         "rerun_molt_detection": [False],

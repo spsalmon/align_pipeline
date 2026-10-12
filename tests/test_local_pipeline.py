@@ -252,6 +252,37 @@ def test_parse_building_blocks_broadcast_and_select():
     assert blocks[2]["morphological_features"] == ["volume", "length", "area"]
 
 
+def test_parse_quality_control_pixelsize():
+    # QC reads the same pixelsize as morphology, and it is optional for QC.
+    from align_pipeline.building_blocks import parse_building_blocks_config
+
+    config = {
+        "building_blocks": ["quality_control"],
+        "qc_masks": ["ch2_seg_str"],
+        "qc_images": [None],
+        "qc_model_path": ["/path/to/qc_xgb_model.pkl"],
+    }
+    assert parse_building_blocks_config(config)[0]["pixelsize"] is None
+
+    config["pixelsize"] = [0.65]
+    assert parse_building_blocks_config(config)[0]["pixelsize"] == 0.65
+
+
+def test_qc_feature_pixelsize():
+    # Models trained with pixel sizes need the experiment's pixelsize, older
+    # models were trained on features in pixels and must ignore it.
+    from align_pipeline.workers.quality_control import get_feature_pixelsize
+
+    legacy_model = {"qc_classes": ["error", "worm"]}
+    um_model = {"qc_classes": ["error", "worm"], "pixelsizes": {"squid": 0.65}}
+
+    assert get_feature_pixelsize(legacy_model, {"pixelsize": 0.65}) is None
+    assert get_feature_pixelsize(legacy_model, {"pixelsize": None}) is None
+    assert get_feature_pixelsize(um_model, {"pixelsize": 0.65}) == 0.65
+    with pytest.raises(ValueError, match="pixelsize"):
+        get_feature_pixelsize(um_model, {"pixelsize": None})
+
+
 # ---- Output naming ----
 
 

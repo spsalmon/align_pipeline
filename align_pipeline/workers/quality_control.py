@@ -11,6 +11,25 @@ from joblib import Parallel, delayed, load
 from align_pipeline import utils
 
 
+def get_feature_pixelsize(model_path_and_classes, block_config):
+    """Return the pixel size to compute the QC features with.
+
+    Models trained with per-scope pixel sizes store them in their bundle and
+    expect size features in µm, so the experiment's pixelsize is required.
+    Older models were trained on features in pixels and must get ``None``,
+    whatever pixelsize the config sets.
+    """
+    if model_path_and_classes.get("pixelsizes") is None:
+        return None
+    pixelsize = block_config.get("pixelsize")
+    if pixelsize is None:
+        raise ValueError(
+            "This QC model was trained with features in µm, please set "
+            "'pixelsize' in the config."
+        )
+    return pixelsize
+
+
 def main(input_pickle, output_file, block_config, config, filemap, n_jobs=-1):
     """Main function."""
 
@@ -31,13 +50,18 @@ def main(input_pickle, output_file, block_config, config, filemap, n_jobs=-1):
     classifier_path = block_config["qc_model_path"]
     model_path_and_classes = load(classifier_path)
     mask_only = model_path_and_classes.get("mask_only", False)
+    pixelsize = get_feature_pixelsize(model_path_and_classes, block_config)
+    # only pass pixelsize to models expecting µm features, so that pixel-based
+    # models also run with align_toolbox versions predating the argument
+    feature_kwargs = {} if pixelsize is None else {"pixelsize": pixelsize}
     if mask_only:
         features = Parallel(n_jobs=n_jobs)(
-            delayed(compute_qc_features)(mask_path, None) for mask_path in input_masks
+            delayed(compute_qc_features)(mask_path, None, **feature_kwargs)
+            for mask_path in input_masks
         )
     else:
         features = Parallel(n_jobs=n_jobs)(
-            delayed(compute_qc_features)(mask_path, image_path)
+            delayed(compute_qc_features)(mask_path, image_path, **feature_kwargs)
             for mask_path, image_path in zip(input_masks, input_images)
         )
 

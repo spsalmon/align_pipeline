@@ -21,7 +21,7 @@ align init-configs ~/my_configs
 | `raw_dir_name` | `"raw"` | Subdirectory of `experiment_dir` holding the raw images. |
 | `analysis_dir_name` | `"analysis"` | Subdirectory where all outputs are written. Change it to run several analyses of the same experiment side by side. |
 | `report_format` | `"csv"` | `"csv"` or `"parquet"`. Parquet is much smaller, CSV is easier to open in Excel. |
-| `pixelsize` | *required for morphology* | Physical size of a pixel in µm. |
+| `pixelsize` | *required for morphology* | Physical size of a pixel in µm. Also used by quality control models trained with pixel sizes. |
 | `get_experiment_time` | `True` | Extract the real acquisition time of each image from the metadata. Slow, but very useful downstream. |
 | `time_regex` | `'Time(\d+)'` | Regular expression extracting the time index from the file name. |
 | `point_regex` | `'Point(\d+)'` | Same, for the position (individual) index. |
