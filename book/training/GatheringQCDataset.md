@@ -75,7 +75,11 @@ experiments_to_exclude: []
   per key in `database_configs`, each with `images/` and `masks/`.
 - **database_configs** : one entry per sub-dataset to build. Each entry accepts:
   - **size** : the target number of images for that sub-dataset.
-  - **channel** : the raw channel(s) to extract (0-indexed).
+  - **channel** : the raw channel(s) to extract (0-indexed), the same for
+    every experiment.
+  - **organ** : alternative to `channel`. The organ name (e.g. `pharynx`) is
+    looked up in `organ_channels` for each experiment, so the organ can sit in a
+    different channel depending on the scope.
   - **strains** : optional list of strain numbers to restrict to.
   - **magnifications** : optional list of magnification strings to restrict to
     (e.g. `["10x"]`); case variations are generated automatically. Note the
@@ -105,6 +109,37 @@ experiments_to_exclude: []
   paths instead of walking `valid_subdirectories`.
 - **experiments_to_always_include** / **experiments_to_exclude** : force-include
   or force-exclude experiments by name.
+
+## Using an explicit list of filemaps
+
+Instead of scanning the storage, you can list the filemaps directly, the same
+way the plotting does. In that case `storage_path`, `valid_subdirectories`, the
+keyword/strain/magnification filters and the experiment lists are ignored, and
+`valid_scopes` is only used to name each experiment's microscope.
+
+```yaml
+database_configs: {
+  'body': {'size': 2000, 'organ': 'body'},
+  'pharynx': {'size': 2000, 'organ': 'pharynx'},
+}
+
+filemap_paths: [
+  "/path/to/orca_experiment/analysis/report/analysis_filemap_annotated.parquet",
+  "/path/to/squid_experiment/analysis/report/analysis_filemap_annotated.csv",
+]
+
+# one mapping for all filemaps, or one per filemap (same order)
+organ_channels: [
+  {'body': 'ch2', 'pharynx': 'ch1'},
+  {'body': 'ch3', 'pharynx': 'ch2'},
+]
+```
+
+Channels in `organ_channels` use the 1-indexed names from the filemap columns
+(`ch2` means the `ch2_seg_str`, `ch2_raw_str` and `ch2_seg_str_qc` columns).
+`organ_channels` also works with the scanning mode, but there it must be a
+single mapping, since the number of filemaps found is not known in advance.
+A full example is `training/classification/configs/yap_qc_dataset_config.yaml`.
 
 ## Running
 

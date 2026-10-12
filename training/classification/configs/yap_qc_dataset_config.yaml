@@ -1,0 +1,74 @@
+database_path: "/mnt/towbin.data/shared/spsalmon/towbinlab_classification_database/datasets/10x_yap_experiments_qc"
+
+database_configs: {
+  'pharynx': {
+      'size': 3000,
+      'stage_proportions': {'L1': 0.25, 'L2': 0.25, 'L3': 0.25, 'L4': 0.25,},
+      'organ': 'pharynx',
+  },
+}
+
+# When set, these filemaps are used directly and the directory-scanning
+# options below (storage_path, valid_subdirectories, strains, ...) are ignored.
+filemap_paths: [
+  # klement's experiments
+  "/mnt/towbin.data/shared/kstojanovski/20240202_Orca_10x_yap-1del_col-10-tir_wBT160-186-310-337-380-393_25C_20240202_171239_051/analysis_sacha/report/analysis_filemap_annotated.parquet",
+  "/mnt/towbin.data/shared/kstojanovski/20240212_Orca_10x_yap-1del_col-10-tir_wBT160-186-310-337-380-393_25C_20240212_164059_429/analysis_sacha/report/analysis_filemap_annotated.parquet",
+  # anna's experiments
+  # "/mnt/towbin.data/shared/aslesarchuk/20250519_squid1_10x_wBT186_437_438_439_yap_aid/analysis/report/analysis_filemap_annotated.parquet", # needs rerun
+  # "/mnt/towbin.data/shared/aslesarchuk/20250527_squid1_10x_wBT160_186_393_415_yap_del/analysis/report/analysis_filemap_annotated.parquet", # needs rerun
+  # "/mnt/towbin.data/shared/aslesarchuk/20250603_squid1_10x_wBT160_186_393_415_yap_del/analysis/report/analysis_filemap_annotated.parquet", # needs rerun
+  "/mnt/towbin.data/shared/aslesarchuk/20250707_squid1_10x_wBT160_186_415_393_528_545_yap_aid_del/analysis/report/analysis_filemap_annotated.parquet",
+  "/mnt/towbin.data/shared/aslesarchuk/20250711_squid1_10x_wBT160_186_415_393_528_545_yap_delta_aid/analysis/report/analysis_filemap_annotated.parquet",
+  "/mnt/towbin.data/shared/aslesarchuk/20250717_squid1_10x_wbT160_186_415_393_528_545_yap_del_aid/analysis/report/analysis_filemap_annotated.parquet",
+  "/mnt/towbin.data/shared/aslesarchuk/20250721_squid1_10x_wBT160_186_415_393_528_545_yap_del_aid/analysis/report/analysis_filemap_annotated.parquet",
+  # "/mnt/towbin.data/shared/aslesarchuk/20251118_Squid4_10x_wBT571_yap_del_raga1_del/analysis/report/analysis_filemap_annotated.parquet", # needs rerun
+  "/mnt/towbin.data/shared/aslesarchuk/20260331_squid5_10x_wBT160_186_415_393_272_634_eft3_tir/analysis/report/analysis_filemap_annotated.csv",
+  "/mnt/towbin.data/shared/aslesarchuk/20260407_squid5_10x_160_186_415_393_272_634_eft3_tir/analysis/report/analysis_filemap_annotated.csv",
+  "/mnt/towbin.data/shared/aslesarchuk/20260421_squid5_10x_160_186_415_393_272_634/analysis/report/analysis_filemap_annotated.csv",
+  # "/mnt/towbin.data/shared/aslesarchuk/20260507_squid5_10x_wBT160_186_415_393_272_634_eft3tir/analysis/report/analysis_filemap_annotated.csv", # some problem with the QC, rerun
+  "/mnt/towbin.data/shared/aslesarchuk/20260522_squid5_10x_160_186_415_393_272_634_eft3tir/analysis/report/analysis_filemap_annotated.csv",
+  "/mnt/towbin.data/shared/aslesarchuk/20260709_Orca_10x_wBT160_186_415_390_697_698/analysis/report/analysis_filemap_annotated.csv",
+  "/mnt/towbin.data/shared/aslesarchuk/20260723_orca_10x_160_186_415_393_697_698_bus8/analysis/report/analysis_filemap_annotated.csv",
+]
+
+# One mapping for all filemaps, or one per filemap (same order as filemap_paths).
+organ_channels: [
+  # klement's experiments
+  {'body': 'ch2', 'pharynx' : 'ch1'},
+  {'body': 'ch2', 'pharynx' : 'ch1'},
+  # anna's experiments
+  # {'body': 'ch2', 'pharynx' : 'ch1'},
+  # {'body': 'ch2', 'pharynx' : 'ch1'},
+  # {'body': 'ch2', 'pharynx' : 'ch1'},
+  {'body': 'ch2', 'pharynx' : 'ch1'},
+  {'body': 'ch2', 'pharynx' : 'ch1'},
+  {'body': 'ch2', 'pharynx' : 'ch1'},
+  {'body': 'ch2', 'pharynx' : 'ch1'},
+  # {'body': 'ch2', 'pharynx' : 'ch1'},
+  {'body': 'ch3', 'pharynx' : 'ch2'},
+  {'body': 'ch3', 'pharynx' : 'ch2'},
+  {'body': 'ch3', 'pharynx' : 'ch2'},
+  # {'body': 'ch3', 'pharynx' : 'ch2'},
+  {'body': 'ch3', 'pharynx' : 'ch2'},
+  {'body': 'ch2', 'pharynx' : 'ch1'},
+  {'body': 'ch2', 'pharynx' : 'ch1'},
+]
+
+class_proportions: {"error": 0.25, "potential_error": 0.5, "good": 0.25, "egg": 0.0}
+# smoother configuration
+lambda: 0.0075
+# threshold quantile
+threshold: 0.90
+
+# sets a limit on how far after M4 images will be included
+extra_adulthood_time: 40
+
+# only used to name the microscope of each experiment
+valid_scopes: ["squid", "ti2"]
+scopes_alt_names: {
+  'crest': ['Crest', 'crest', 'CREST'],
+  'squid': ['Squid', 'squid', 'SQUID'],
+  'ti2': ['Ti2', 'ti2', 'TI2', 'orca', 'Orca', 'ORCA'],
+  'ziva': ['ziva', 'ZIVA', 'Ziva']
+}

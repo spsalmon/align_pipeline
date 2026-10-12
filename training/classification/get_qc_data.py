@@ -42,6 +42,71 @@ def process_strains(strains):
     return correct_strains
 
 
+def find_column(columns, name):
+    """Return the filemap column called ``name``, or None.
+
+    Path columns carry the analysis directory as a prefix (e.g.
+    ``analysis/ch2_seg_str``), so a ``/name`` suffix also matches. Matching is
+    exact otherwise: a substring match would let ``ch2_raw_str`` pick up
+    ``ch1_ch2_raw_str``.
+    """
+    for column in columns:
+        if column == name or column.endswith(f"/{name}"):
+            return column
+    return None
+
+
+def fix_storage_path(path):
+    """Point old storage mounts at the current one. Missing paths stay None."""
+    if path is None:
+        return None
+    return path.replace("TowbinLab", "shared").replace("external.data", "towbin.data")
+
+
+def path_exists(path):
+    # filemaps have null paths where a block produced no output for a frame
+    return path is not None and os.path.exists(path)
+
+
+def resolve_channel_names(database_config, n_filemaps, organ_channels):
+    """Return the channel name (e.g. ``ch2``) to use for each filemap.
+
+    A database either sets ``channel`` (0-indexed channel list, the same for
+    every experiment) or ``organ``, looked up per experiment in
+    ``organ_channels``. The latter handles organs that sit in a different
+    channel depending on the scope. ``organ_channels`` follows the plotting
+    convention: a single mapping applied to all filemaps, or one per filemap.
+    """
+    organ = database_config.get("organ", None)
+    if organ is None:
+        channel = database_config.get("channel", [0])
+        channel_name = "_".join(f"ch{channel_number + 1}" for channel_number in channel)
+        return [channel_name] * n_filemaps
+
+    if organ_channels is None:
+        raise ValueError(
+            f"Database config uses organ '{organ}' but no organ_channels were given."
+        )
+    if isinstance(organ_channels, dict):
+        organ_channels = [organ_channels]
+    if len(organ_channels) == 1:
+        organ_channels = organ_channels * n_filemaps
+    elif len(organ_channels) != n_filemaps:
+        raise ValueError(
+            f"organ_channels has {len(organ_channels)} entries but there are "
+            f"{n_filemaps} filemaps. Provide one mapping, or one per filemap."
+        )
+
+    channel_names = []
+    for i, mapping in enumerate(organ_channels):
+        if organ not in mapping:
+            raise ValueError(
+                f"Organ '{organ}' missing from organ_channels entry {i}: {mapping}"
+            )
+        channel_names.append(mapping[organ])
+    return channel_names
+
+
 def get_analysis_filemap(experiment_path, get_annotated_only=False):
     """Return the newest analysis filemap for an experiment, or None.
 
@@ -138,7 +203,7 @@ def get_images_from_filemap(
     database_config,
     valid_scopes_expanded,
     variation_to_unified_scope_name,
-    channel,
+    channel_name,
     threshold=0.95,
     lmbda=0.0075,
     extra_adulthood_time=40,
@@ -151,13 +216,11 @@ def get_images_from_filemap(
     if "Ignore" in filemap_df.columns:
         filemap_df = filemap_df.filter(~pl.col("Ignore"))
 
-    # first check if the filemap has the required columns
-    worm_type_columns = [column for column in filemap_df.columns if "qc" in column]
-
-    channel_names = []
-    for channel_number in channel:
-        channel_names.append(f"ch{channel_number + 1}")
-    channel_name = "_".join(channel_names)
+    # first check if the filemap has the required columns. Filemaps usually hold
+    # several organs, so the QC column has to be the one of this channel's masks.
+    seg_name = f"{channel_name}_seg_str"
+    qc_column = find_column(filemap_df.columns, f"{seg_name}_qc")
+    worm_type_columns = [qc_column] if qc_column is not None else []
 
     if (
         "ExperimentTime" not in filemap_df.columns
@@ -178,15 +241,12 @@ def get_images_from_filemap(
 
     database = pl.DataFrame(schema=DATABASE_SCHEMA)
 
-    seg_columns = [
-        column
-        for column in filemap_df.columns
-        if ((f"{channel_name}_seg" in column) and ("str" in column))
-    ]
-    straigthened_raw = f"{channel_name}_raw_str"
-    straigthened_raw_columns = [
-        column for column in filemap_df.columns if (straigthened_raw in column)
-    ]
+    seg_column = find_column(filemap_df.columns, seg_name)
+    seg_columns = [seg_column] if seg_column is not None else []
+    straigthened_raw_column = find_column(filemap_df.columns, f"{channel_name}_raw_str")
+    straigthened_raw_columns = (
+        [straigthened_raw_column] if straigthened_raw_column is not None else []
+    )
 
     # these have to come before the rename and the indexing below
     if len(straigthened_raw_columns) == 0:
@@ -205,25 +265,24 @@ def get_images_from_filemap(
     if "raw" in filemap_df.columns:
         filemap_df = filemap_df.drop("raw")
     filemap_df = filemap_df.rename({straigthened_raw_columns[0]: "raw"})
-    volume_columns = [
-        column
-        for column in filemap_df.columns
-        if ((channel_name in column) and ("volume" in column))
-    ]
+    volume_column = find_column(filemap_df.columns, f"{seg_name}_volume")
+    volume_columns = [volume_column] if volume_column is not None else []
 
     rows = []
 
     filemaps_of_points = filemap_df.partition_by("Point")
 
-    microscope = [scope for scope in valid_scopes_expanded if scope in experiment_name][
-        0
-    ]
+    microscopes = [scope for scope in valid_scopes_expanded if scope in experiment_name]
+    # explicitly listed filemaps are not filtered by scope, so there may be no match
+    microscope = microscopes[0] if microscopes else "unknown"
     microscope = variation_to_unified_scope_name.get(microscope, microscope)
 
-    print(f"Microscope found: {microscope} in experiment {experiment_name}")
+    print(
+        f"Microscope found: {microscope} in experiment {experiment_name}, "
+        f"using channel {channel_name}"
+    )
 
     print(f"Get classes: {get_classes} for experiment {experiment_name}")
-    seg_column = seg_columns[0]
     if get_classes:
         if len(worm_type_columns) == 0:
             # make a fake qc column with all good if no qc column exists, so we can still use the data for training but just label everything as good
@@ -317,18 +376,16 @@ def get_images_from_filemap(
 
             images = filemap.select(pl.col("raw")).to_numpy().squeeze()[indices]
             # replace external.data/TowbinLab by towbin.data/shared
-            images = [img.replace("TowbinLab", "shared") for img in images]
-            images = [img.replace("external.data", "towbin.data") for img in images]
+            images = [fix_storage_path(img) for img in images]
 
             masks = filemap.select(pl.col(seg_column)).to_numpy().squeeze()[indices]
-            masks = [m.replace("TowbinLab", "shared") for m in masks]
-            masks = [m.replace("external.data", "towbin.data") for m in masks]
+            masks = [fix_storage_path(m) for m in masks]
 
             # only keep if both image and mask exist
             valid_indices = [
                 i
                 for i, (img, msk) in enumerate(zip(images, masks))
-                if os.path.exists(img) and os.path.exists(msk)
+                if path_exists(img) and path_exists(msk)
             ]
             classes = [classes[i] for i in valid_indices]
             images = [images[i] for i in valid_indices]
@@ -360,17 +417,15 @@ def get_images_from_filemap(
                 filemap = filemap.filter(pl.col(volume_columns[0]) != 0)
 
             images = filemap.select(pl.col("raw")).to_numpy().squeeze()
-            images = [img.replace("TowbinLab", "shared") for img in images]
-            images = [img.replace("external.data", "towbin.data") for img in images]
+            images = [fix_storage_path(img) for img in images]
 
             masks = filemap.select(pl.col(seg_column)).to_numpy().squeeze()
-            masks = [m.replace("TowbinLab", "shared") for m in masks]
-            masks = [m.replace("external.data", "towbin.data") for m in masks]
+            masks = [fix_storage_path(m) for m in masks]
 
             valid_indices = [
                 i
                 for i, (img, msk) in enumerate(zip(images, masks))
-                if os.path.exists(img) and os.path.exists(msk)
+                if path_exists(img) and path_exists(msk)
             ]
             images = [images[i] for i in valid_indices]
             masks = [masks[i] for i in valid_indices]
@@ -422,6 +477,9 @@ if __name__ == "__main__":
     experiments_to_consider = config.get("experiments_to_consider", [])
     experiments_to_always_include = config.get("experiments_to_always_include", [])
     experiments_to_exclude = config.get("experiments_to_exclude", [])
+    # explicit list of filemaps, used instead of scanning storage_path
+    filemap_paths = config.get("filemap_paths", [])
+    organ_channels = config.get("organ_channels", None)
     class_proportions = config.get(
         "class_proportions",
         None,
@@ -460,7 +518,9 @@ if __name__ == "__main__":
     valid_subdirectories = [
         os.path.join(storage_path, sub_dir) for sub_dir in valid_subdirectories
     ]
-    if experiments_to_consider:
+    if filemap_paths:
+        pass
+    elif experiments_to_consider:
         experiment_directories = experiments_to_consider
     else:
         for exp_dir in valid_subdirectories:
@@ -477,23 +537,30 @@ if __name__ == "__main__":
 
     # filter experiment directories based on the criteria and get their filemaps
     for database_name, database_config in database_configs.items():
-        channel = database_config.get("channel", [0])
-        get_annotated_only = database_config.get("stage_proportions", None) is not None
-        filemaps = find_all_relevant_filemaps(
-            experiment_directories,
-            experiments_to_always_include,
-            keywords_to_include,
-            experiments_to_exclude,
-            valid_scopes_expanded,
-            keywords_to_exclude,
-            database_config,
-            get_annotated_only=get_annotated_only,
+        if filemap_paths:
+            filemaps = filemap_paths
+        else:
+            get_annotated_only = (
+                database_config.get("stage_proportions", None) is not None
+            )
+            filemaps = find_all_relevant_filemaps(
+                experiment_directories,
+                experiments_to_always_include,
+                keywords_to_include,
+                experiments_to_exclude,
+                valid_scopes_expanded,
+                keywords_to_exclude,
+                database_config,
+                get_annotated_only=get_annotated_only,
+            )
+        channel_names = resolve_channel_names(
+            database_config, len(filemaps), organ_channels
         )
 
         database = pl.DataFrame(
             schema=DATABASE_SCHEMA,
         )
-        for filemap in filemaps:
+        for filemap, channel_name in zip(filemaps, channel_names):
             # try:
             database = database.vstack(
                 get_images_from_filemap(
@@ -501,7 +568,7 @@ if __name__ == "__main__":
                     database_config,
                     valid_scopes_expanded,
                     variation_to_unified_scope_name=variation_to_unified_scope_name,
-                    channel=channel,
+                    channel_name=channel_name,
                     lmbda=lmbda,
                     threshold=threshold,
                     extra_adulthood_time=extra_adulthood_time,
@@ -572,7 +639,8 @@ if __name__ == "__main__":
         ):
             image_path = row["Image"]
             mask_path = row["Mask"]
-            image = read_tiff_file(image_path, channels_to_keep=channel)
+            # the straightened raw image only holds the selected channel(s)
+            image = read_tiff_file(image_path)
             mask = read_tiff_file(mask_path)
             image_name = row["OutputName"]
             # save the image
