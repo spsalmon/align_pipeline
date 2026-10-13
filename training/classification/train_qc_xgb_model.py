@@ -56,6 +56,90 @@ def cached_features_match(processed_annotation_csv_path, pixelsizes):
     )
 
 
+def load_dataset(dataset_path, mask_only, pixelsizes, rerun_feature_extraction):
+    """Load the annotations of one dataset and compute (or reuse) its features.
+
+    Features are cached inside the dataset directory, so each dataset of a
+    combined training keeps its own cache.
+    """
+    project_yaml = os.path.join(dataset_path, "project.yaml")
+    with open(project_yaml) as f:
+        project_config = yaml.safe_load(f)
+
+    classes = project_config["classes"]
+    mask_dir = os.path.join(dataset_path, "masks")
+    annotation_csv_path = os.path.join(dataset_path, "annotations", "annotations.csv")
+    annotations_df = pd.read_csv(annotation_csv_path)
+    # normalise Windows-style paths coming from the annotation tool
+    annotations_df["ImagePath"] = annotations_df["ImagePath"].str.replace("\\", "/")
+    annotations_df["ImagePath"] = annotations_df["ImagePath"].str.replace(
+        "//izbkingston", "/mnt"
+    )
+    # add the mask paths to the dataframe
+    annotations_df["MaskPath"] = annotations_df["ImagePath"].apply(
+        lambda x: os.path.join(mask_dir, os.path.basename(x))
+    )
+    # remove rows with no class label or classes not in the project config
+    annotations_df = annotations_df[annotations_df["Class"].isin(classes)].reset_index(
+        drop=True
+    )
+
+    print(annotations_df.head())
+    # check that image and mask paths exist
+    for idx, row in annotations_df.iterrows():
+        assert os.path.exists(
+            row["ImagePath"]
+        ), f"Image path does not exist: {row['ImagePath']}"
+        assert os.path.exists(
+            row["MaskPath"]
+        ), f"Mask path does not exist: {row['MaskPath']}"
+
+    features_df_path = os.path.join(dataset_path, "features.csv")
+    processed_annotation_csv_path = os.path.join(
+        dataset_path, "processed_annotations.csv"
+    )
+    use_cached_features = (
+        os.path.exists(features_df_path)
+        and os.path.exists(processed_annotation_csv_path)
+        and not rerun_feature_extraction
+    )
+    if use_cached_features and not cached_features_match(
+        processed_annotation_csv_path, pixelsizes
+    ):
+        print("Cached features were computed with other pixel sizes, recomputing.")
+        use_cached_features = False
+
+    if use_cached_features:
+        annotations_df = pd.read_csv(processed_annotation_csv_path)
+        features_df = pd.read_csv(features_df_path)
+    else:
+        image_pixelsizes = [
+            get_scope_pixelsize(image_path, pixelsizes)
+            for image_path in annotations_df["ImagePath"]
+        ]
+        annotations_df["PixelSize"] = image_pixelsizes
+        X = Parallel(n_jobs=-1)(
+            delayed(compute_qc_features)(
+                row["MaskPath"],
+                None if mask_only else row["ImagePath"],
+                pixelsize=pixelsize,
+            )
+            for (_, row), pixelsize in tqdm(
+                zip(annotations_df.iterrows(), image_pixelsizes),
+                total=annotations_df.shape[0],
+            )
+        )
+        valid_indices = [i for i, x in enumerate(X) if x is not None]
+        X = [X[i] for i in valid_indices]
+        annotations_df = annotations_df.iloc[valid_indices].reset_index(drop=True)
+        features_df = pd.concat(X, ignore_index=True)
+        features_df.to_csv(features_df_path, index=False)
+        annotations_df.to_csv(processed_annotation_csv_path, index=False)
+
+    annotations_df["Dataset"] = dataset_path
+    return annotations_df, features_df
+
+
 def train_xgb_model(
     train_X,
     train_y,
@@ -155,7 +239,7 @@ if __name__ == "__main__":
     with open(config_file) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
-    dataset_path = config["dataset_path"]
+    dataset_paths = config["dataset_path"]
     output_path = config["output_path"]
     os.makedirs(output_path, exist_ok=True)
 
@@ -176,79 +260,18 @@ if __name__ == "__main__":
     # keep a copy of the config next to the trained model
     shutil.copy(config_file, output_path)
 
-    project_yaml = os.path.join(dataset_path, "project.yaml")
-    with open(project_yaml) as f:
-        project_config = yaml.safe_load(f)
-
-    classes = project_config["classes"]
-    mask_dir = os.path.join(dataset_path, "masks")
-    annotation_csv_path = os.path.join(dataset_path, "annotations", "annotations.csv")
-    annotations_df = pd.read_csv(annotation_csv_path)
-    # normalise Windows-style paths coming from the annotation tool
-    annotations_df["ImagePath"] = annotations_df["ImagePath"].str.replace("\\", "/")
-    annotations_df["ImagePath"] = annotations_df["ImagePath"].str.replace(
-        "//izbkingston", "/mnt"
+    # several datasets can be combined into one training set
+    dataset_paths = (
+        [dataset_paths] if isinstance(dataset_paths, str) else list(dataset_paths)
     )
-    # add the mask paths to the dataframe
-    annotations_df["MaskPath"] = annotations_df["ImagePath"].apply(
-        lambda x: os.path.join(mask_dir, os.path.basename(x))
-    )
-    # remove rows with no class label or classes not in the project config
-    annotations_df = annotations_df[annotations_df["Class"].isin(classes)].reset_index(
-        drop=True
-    )
-
-    print(annotations_df.head())
-    # check that image and mask paths exist
-    for idx, row in annotations_df.iterrows():
-        assert os.path.exists(
-            row["ImagePath"]
-        ), f"Image path does not exist: {row['ImagePath']}"
-        assert os.path.exists(
-            row["MaskPath"]
-        ), f"Mask path does not exist: {row['MaskPath']}"
-
-    features_df_path = os.path.join(dataset_path, "features.csv")
-    processed_annotation_csv_path = os.path.join(
-        dataset_path, "processed_annotations.csv"
-    )
-    use_cached_features = (
-        os.path.exists(features_df_path)
-        and os.path.exists(processed_annotation_csv_path)
-        and not rerun_feature_extraction
-    )
-    if use_cached_features and not cached_features_match(
-        processed_annotation_csv_path, pixelsizes
-    ):
-        print("Cached features were computed with other pixel sizes, recomputing.")
-        use_cached_features = False
-
-    if use_cached_features:
-        annotations_df = pd.read_csv(processed_annotation_csv_path)
-        features_df = pd.read_csv(features_df_path)
-    else:
-        image_pixelsizes = [
-            get_scope_pixelsize(image_path, pixelsizes)
-            for image_path in annotations_df["ImagePath"]
-        ]
-        annotations_df["PixelSize"] = image_pixelsizes
-        X = Parallel(n_jobs=-1)(
-            delayed(compute_qc_features)(
-                row["MaskPath"],
-                None if mask_only else row["ImagePath"],
-                pixelsize=pixelsize,
-            )
-            for (_, row), pixelsize in tqdm(
-                zip(annotations_df.iterrows(), image_pixelsizes),
-                total=annotations_df.shape[0],
-            )
-        )
-        valid_indices = [i for i, x in enumerate(X) if x is not None]
-        X = [X[i] for i in valid_indices]
-        annotations_df = annotations_df.iloc[valid_indices].reset_index(drop=True)
-        features_df = pd.concat(X, ignore_index=True)
-        features_df.to_csv(features_df_path, index=False)
-        annotations_df.to_csv(processed_annotation_csv_path, index=False)
+    datasets = [
+        load_dataset(path, mask_only, pixelsizes, rerun_feature_extraction)
+        for path in dataset_paths
+    ]
+    annotations_df = pd.concat([a for a, _ in datasets], ignore_index=True)
+    features_df = pd.concat([f for _, f in datasets], ignore_index=True)
+    for path, (dataset_annotations_df, _) in zip(dataset_paths, datasets):
+        print(f"{path}: {len(dataset_annotations_df)} samples")
 
     print(f"features df shape: {features_df.shape}")
 

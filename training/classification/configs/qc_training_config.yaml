@@ -1,5 +1,10 @@
 # Directory produced by the labelling/annotation tool. Must contain:
 #   project.yaml, images/, masks/, annotations/annotations.csv
+# Either a single directory, or a list of directories to combine into one
+# training set (features are cached per dataset), e.g.
+# dataset_path:
+#   - "/path/to/first_dataset/"
+#   - "/path/to/second_dataset/"
 dataset_path: "/mnt/towbin.data/shared/spsalmon/towbinlab_classification_database/datasets/10x_pharynx_qc/pharynx/"
 
 # Directory where the trained model bundle and classifiers are written.
