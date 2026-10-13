@@ -43,9 +43,18 @@ def get_scope_pixelsize(image_path, pixelsizes):
     )
 
 
-def cached_features_match(processed_annotation_csv_path, pixelsizes):
-    """Check that cached features were computed with the current pixel sizes."""
+def cached_features_match(processed_annotation_csv_path, pixelsizes, mask_only):
+    """Check that cached features were computed with the current settings.
+
+    Caches written before ``MaskOnly`` was recorded are treated as stale, since
+    the features they hold may come from either mode.
+    """
     cached_df = pd.read_csv(processed_annotation_csv_path)
+    if (
+        "MaskOnly" not in cached_df.columns
+        or not (cached_df["MaskOnly"].astype(bool) == mask_only).all()
+    ):
+        return False
     if "PixelSize" not in cached_df.columns:
         return pixelsizes is None
     expected = cached_df["ImagePath"].apply(
@@ -104,9 +113,12 @@ def load_dataset(dataset_path, mask_only, pixelsizes, rerun_feature_extraction):
         and not rerun_feature_extraction
     )
     if use_cached_features and not cached_features_match(
-        processed_annotation_csv_path, pixelsizes
+        processed_annotation_csv_path, pixelsizes, mask_only
     ):
-        print("Cached features were computed with other pixel sizes, recomputing.")
+        print(
+            "Cached features were computed with other pixel sizes or mask_only "
+            "setting, recomputing."
+        )
         use_cached_features = False
 
     if use_cached_features:
@@ -118,6 +130,7 @@ def load_dataset(dataset_path, mask_only, pixelsizes, rerun_feature_extraction):
             for image_path in annotations_df["ImagePath"]
         ]
         annotations_df["PixelSize"] = image_pixelsizes
+        annotations_df["MaskOnly"] = mask_only
         X = Parallel(n_jobs=-1)(
             delayed(compute_qc_features)(
                 row["MaskPath"],
