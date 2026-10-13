@@ -1,6 +1,7 @@
 import argparse
 import os
 import shutil
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import polars as pl
@@ -15,6 +16,10 @@ from tifffile import imwrite
 from tqdm import tqdm
 
 np.random.seed(387799)
+
+# Images live on network storage, where each stat or read is latency bound.
+# Running them from a thread pool overlaps the round trips.
+IO_EXECUTOR = ThreadPoolExecutor(max_workers=32)
 
 # Schema of the gathered classification database. Every code path that returns a
 # database must use it, including the "skip this experiment" paths: the caller
@@ -66,6 +71,13 @@ def fix_storage_path(path):
 def path_exists(path):
     # filemaps have null paths where a block produced no output for a frame
     return path is not None and os.path.exists(path)
+
+
+def get_valid_indices(images, masks):
+    """Return the indices where both the image and the mask exist."""
+    exists = list(IO_EXECUTOR.map(path_exists, images + masks))
+    n = len(images)
+    return [i for i in range(n) if exists[i] and exists[n + i]]
 
 
 def resolve_channel_names(database_config, n_filemaps, organ_channels):
@@ -270,7 +282,24 @@ def get_images_from_filemap(
 
     rows = []
 
-    filemaps_of_points = filemap_df.partition_by("Point")
+    # Filemaps hold hundreds of columns; the per-point loop only needs these, and
+    # carrying the rest makes every per-point select/filter much slower.
+    used_columns = [
+        "Point",
+        "Time",
+        "ExperimentTime",
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "raw",
+        seg_column,
+        *volume_columns,
+        *worm_type_columns,
+    ]
+    filemaps_of_points = filemap_df.select(
+        [column for column in used_columns if column in filemap_df.columns]
+    ).partition_by("Point")
 
     microscopes = [scope for scope in valid_scopes_expanded if scope in experiment_name]
     # explicitly listed filemaps are not filtered by scope, so there may be no match
@@ -319,7 +348,13 @@ def get_images_from_filemap(
                         )
 
             point = filemap.select(pl.col("Point")).row(0)[0]
-            volume = filemap.select(pl.col(volume_columns[0])).to_numpy().squeeze()
+            # writable: polars may hand out a read-only view, and older align_toolbox
+            # smoothers interpolate in place and return all NaN when they cannot write
+            volume = (
+                filemap.select(pl.col(volume_columns[0]))
+                .to_numpy(writable=True)
+                .squeeze()
+            )
             # skip point if less than 10 data points
             if np.sum(~np.isnan(volume)) < 10:
                 continue
@@ -382,11 +417,7 @@ def get_images_from_filemap(
             masks = [fix_storage_path(m) for m in masks]
 
             # only keep if both image and mask exist
-            valid_indices = [
-                i
-                for i, (img, msk) in enumerate(zip(images, masks))
-                if path_exists(img) and path_exists(msk)
-            ]
+            valid_indices = get_valid_indices(images, masks)
             classes = [classes[i] for i in valid_indices]
             images = [images[i] for i in valid_indices]
             masks = [masks[i] for i in valid_indices]
@@ -422,11 +453,7 @@ def get_images_from_filemap(
             masks = filemap.select(pl.col(seg_column)).to_numpy().squeeze()
             masks = [fix_storage_path(m) for m in masks]
 
-            valid_indices = [
-                i
-                for i, (img, msk) in enumerate(zip(images, masks))
-                if path_exists(img) and path_exists(msk)
-            ]
+            valid_indices = get_valid_indices(images, masks)
             images = [images[i] for i in valid_indices]
             masks = [masks[i] for i in valid_indices]
 
@@ -492,6 +519,15 @@ def sample_database(database, total_images, class_proportions, scope_proportions
             group_images.sample(n, with_replacement=False)
         )
     return sampled_database
+
+
+def copy_image_and_mask(row, images_output_dir, masks_output_dir):
+    # the straightened raw image only holds the selected channel(s)
+    image = read_tiff_file(row["Image"])
+    mask = read_tiff_file(row["Mask"])
+    image_name = row["OutputName"]
+    imwrite(os.path.join(images_output_dir, image_name), image, compression="zlib")
+    imwrite(os.path.join(masks_output_dir, image_name), mask, compression="zlib")
 
 
 def get_args():
@@ -667,19 +703,15 @@ if __name__ == "__main__":
         masks_output_dir = os.path.join(database_path, database_name, "masks")
         os.makedirs(images_output_dir, exist_ok=True)
         os.makedirs(masks_output_dir, exist_ok=True)
-        for row in tqdm(
-            sampled_database.iter_rows(named=True), total=sampled_database.height
+        rows = sampled_database.iter_rows(named=True)
+        # consume the iterator so that a failed copy raises here
+        for _ in tqdm(
+            IO_EXECUTOR.map(
+                lambda row: copy_image_and_mask(
+                    row, images_output_dir, masks_output_dir
+                ),
+                rows,
+            ),
+            total=sampled_database.height,
         ):
-            image_path = row["Image"]
-            mask_path = row["Mask"]
-            # the straightened raw image only holds the selected channel(s)
-            image = read_tiff_file(image_path)
-            mask = read_tiff_file(mask_path)
-            image_name = row["OutputName"]
-            # save the image
-            imwrite(
-                os.path.join(images_output_dir, image_name), image, compression="zlib"
-            )
-            imwrite(
-                os.path.join(masks_output_dir, image_name), mask, compression="zlib"
-            )
+            pass
