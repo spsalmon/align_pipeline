@@ -360,6 +360,10 @@ def get_images_from_filemap(
             # skip point if less than 10 data points
             if np.sum(~np.isnan(volume)) < 10:
                 continue
+            # A failed straightening or an empty mask leaves an all-zero image and
+            # no volume. Those are obvious errors that only waste annotation time.
+            # Computed before smoothing, which may fill the NaNs of volume in place.
+            non_empty = volume > 0
             worm_types = filemap.select(pl.col(worm_type_column)).to_numpy().squeeze()
             corrected_volume = correct_series_with_classification(volume, worm_types)
 
@@ -410,6 +414,10 @@ def get_images_from_filemap(
                     np.full(len(confirmed_errors), "error"),
                 ]
             )
+            # filtered after sampling so that the random draws stay the same
+            keep = non_empty[indices]
+            indices = indices[keep]
+            classes = classes[keep]
 
             images = filemap.select(pl.col("raw")).to_numpy().squeeze()[indices]
             # replace external.data/TowbinLab by towbin.data/shared
