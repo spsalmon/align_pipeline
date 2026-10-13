@@ -282,6 +282,13 @@ def get_images_from_filemap(
 
     rows = []
 
+    if get_classes and len(worm_type_columns) == 0:
+        # make a fake qc column with all good if no qc column exists, so we can still
+        # use the data for training but just label everything as good. It has to
+        # exist before the filemap is split per point.
+        filemap_df = filemap_df.with_columns(pl.lit("worm").alias("placeholder_qc"))
+        worm_type_columns = ["placeholder_qc"]
+
     # Filemaps hold hundreds of columns; the per-point loop only needs these, and
     # carrying the rest makes every per-point select/filter much slower.
     used_columns = [
@@ -313,11 +320,6 @@ def get_images_from_filemap(
 
     print(f"Get classes: {get_classes} for experiment {experiment_name}")
     if get_classes:
-        if len(worm_type_columns) == 0:
-            # make a fake qc column with all good if no qc column exists, so we can still use the data for training but just label everything as good
-            filemap_df = filemap_df.with_columns(pl.lit("worm").alias("placeholder_qc"))
-            worm_type_columns = ["placeholder_qc"]
-
         if len(volume_columns) == 0:
             print(
                 f"Skipping experiment {experiment_name} as it does not have volume columns."
