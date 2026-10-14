@@ -5,6 +5,7 @@ import shutil
 import numpy as np
 import polars as pl
 import yaml
+from align_toolbox.foundation.file_handling import read_filemap
 from align_toolbox.foundation.image_handling import read_tiff_file
 from joblib import Parallel, delayed
 from tifffile import imwrite
@@ -30,6 +31,45 @@ def process_strains(strains):
         correct_strains.append(strain + "_")
         correct_strains.append(strain + " ")
     return correct_strains
+
+
+def resolve_channels(database_name, database_config, n_filemaps, organ_channels):
+    """Return the 0-indexed raw channel to extract for each filemap.
+
+    When ``organ_channels`` is given, the database name is the organ and its
+    channel is looked up per experiment. This handles organs that sit in a
+    different channel depending on the experiment. ``organ_channels`` is a
+    single mapping applied to all filemaps, or one per filemap, e.g.
+    ``{'body': 1, 'pharynx': 0}``. Otherwise the database's ``channel`` is used
+    for every experiment.
+    """
+
+    def as_int(channel):
+        # channels may be written as [0] to match the pipeline config style
+        return int(channel[0]) if isinstance(channel, list) else int(channel)
+
+    if organ_channels is None:
+        return [as_int(database_config.get("channel", 0))] * n_filemaps
+
+    organ = database_name
+    if isinstance(organ_channels, dict):
+        organ_channels = [organ_channels]
+    if len(organ_channels) == 1:
+        organ_channels = organ_channels * n_filemaps
+    elif len(organ_channels) != n_filemaps:
+        raise ValueError(
+            f"organ_channels has {len(organ_channels)} entries but there are "
+            f"{n_filemaps} filemaps. Provide one mapping, or one per filemap."
+        )
+
+    channels = []
+    for i, mapping in enumerate(organ_channels):
+        if organ not in mapping:
+            raise ValueError(
+                f"Organ '{organ}' missing from organ_channels entry {i}: {mapping}"
+            )
+        channels.append(as_int(mapping[organ]))
+    return channels
 
 
 def get_analysis_filemap(experiment_path, get_annotated_only=False):
@@ -161,11 +201,12 @@ def get_images_from_filemap(
     filemap_path,
     database_config,
     valid_scopes_expanded,
+    channel,
     extra_adulthood_time=40,
     n_picks=10,
 ):
     experiment_name = filemap_path.split("/")[-4]
-    filemap_df = pl.read_csv(filemap_path)
+    filemap_df = read_filemap(filemap_path)
 
     filemaps_of_points = filemap_df.partition_by("Point")
     stage_proportions = database_config.get("stage_proportions", None)
@@ -202,6 +243,7 @@ def get_images_from_filemap(
                     "Stage": "unknown",
                     "Microscope": microscope,
                     "Experiment": experiment_name,
+                    "Channel": channel,
                 }
                 rows.append(row)
 
@@ -222,16 +264,20 @@ def get_images_from_filemap(
             and "L2" in stage_proportions.keys()
             and "L3" in stage_proportions.keys()
             and "L4" in stage_proportions.keys()
-            and "adult" in stage_proportions.keys()
         ):
             # handle experiments where all larval stages are annotated
 
             hatch_time, m1, m2, m3, m4 = filemap.select(
-                pl.cols(["HatchTime", "M1", "M2", "M3", "M4"])
+                pl.col(["HatchTime", "M1", "M2", "M3", "M4"])
             ).row(0)
 
             times = [0, hatch_time, m1, m2, m3, m4, m4 + extra_adulthood_time]
             stages = ["egg", "L1", "L2", "L3", "L4", "adult"]
+        else:
+            raise ValueError(
+                "stage_proportions must contain 'larva' and 'adult', or 'L1' to "
+                f"'L4', got {list(stage_proportions.keys())}"
+            )
 
         for i, stage in enumerate(stages):
             stage_beg = times[i]
@@ -252,6 +298,7 @@ def get_images_from_filemap(
                         "Stage": stage,
                         "Microscope": microscope,
                         "Experiment": experiment_name,
+                        "Channel": channel,
                     }
                     rows.append(row)
 
@@ -278,11 +325,11 @@ def calculate_image_combinations(database_size, scope_proportions, stage_proport
     return combinations
 
 
-def process_row(row, output_dir, channel):
+def process_row(row, output_dir):
     try:
         image_path = row["Image"]
         image = read_tiff_file(image_path)
-        channel = channel[0] if isinstance(channel, list) else channel
+        channel = row["Channel"]
         if channel >= image.shape[0]:
             channel = image.shape[0] - 1
         image = image[channel, :, :]  # select the channel
@@ -293,10 +340,9 @@ def process_row(row, output_dir, channel):
         print(f"Error processing image {row['Image']}: {e}")
 
 
-def extract_images(database, output_dir, channel):
+def extract_images(database, output_dir):
     Parallel(n_jobs=1)(
-        delayed(process_row)(row, output_dir, channel)
-        for _, row in tqdm(database.iterrows())
+        delayed(process_row)(row, output_dir) for _, row in tqdm(database.iterrows())
     )
 
 
@@ -318,6 +364,9 @@ experiments_to_consider = config.get("experiments_to_consider", [])
 experiments_to_always_include = config.get("experiments_to_always_include", [])
 experiments_to_exclude = config.get("experiments_to_exclude", [])
 n_picks_per_stage = config.get("n_picks_per_stage", 10)
+# explicit list of filemaps, used instead of scanning storage_path
+filemap_paths = config.get("filemap_paths", None) or []
+organ_channels = config.get("organ_channels", None)
 
 valid_scopes_expanded = []
 for scope in valid_scopes:
@@ -344,7 +393,9 @@ experiment_directories = []
 valid_subdirectories = [
     os.path.join(storage_path, sub_dir) for sub_dir in valid_subdirectories
 ]
-if experiments_to_consider:
+if filemap_paths:
+    pass
+elif experiments_to_consider:
     experiment_directories = experiments_to_consider
 else:
     for exp_dir in valid_subdirectories:
@@ -361,25 +412,32 @@ experiment_directories = list(set(experiment_directories))
 
 # filter experiment directories based on the criteria and get their filemaps
 for database_name, database_config in database_configs.items():
-    get_annotated_only = database_config.get("stage_proportions", None) is not None
-    filemaps = find_all_relevant_filemaps(
-        experiment_directories,
-        experiments_to_always_include,
-        keywords_to_include,
-        experiments_to_exclude,
-        valid_scopes_expanded,
-        keywords_to_exclude,
-        database_config,
-        get_annotated_only=get_annotated_only,
+    if filemap_paths:
+        filemaps = filemap_paths
+    else:
+        get_annotated_only = database_config.get("stage_proportions", None) is not None
+        filemaps = find_all_relevant_filemaps(
+            experiment_directories,
+            experiments_to_always_include,
+            keywords_to_include,
+            experiments_to_exclude,
+            valid_scopes_expanded,
+            keywords_to_exclude,
+            database_config,
+            get_annotated_only=get_annotated_only,
+        )
+    channels = resolve_channels(
+        database_name, database_config, len(filemaps), organ_channels
     )
 
     database = pl.DataFrame()
-    for filemap in filemaps:
+    for filemap, channel in zip(filemaps, channels):
         database = database.vstack(
             get_images_from_filemap(
                 filemap,
                 database_config,
                 valid_scopes_expanded,
+                channel=channel,
                 extra_adulthood_time=extra_adulthood_time,
                 n_picks=n_picks_per_stage,
             )
@@ -434,7 +492,6 @@ for database_name, database_config in database_configs.items():
     extract_images(
         dataset,
         output_dir=os.path.join(database_path, database_name, "images"),
-        channel=database_config.get("channel", 0),
     )
 
 shutil.copy(config_path, os.path.join(database_path, "dataset_config.yaml"))
