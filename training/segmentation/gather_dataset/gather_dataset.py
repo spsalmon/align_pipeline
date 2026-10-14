@@ -13,6 +13,20 @@ from tqdm import tqdm
 
 np.random.seed(387799)
 
+DATABASE_SCHEMA = {
+    "Point": pl.Int64,
+    "Image": pl.String,
+    "Stage": pl.String,
+    "Microscope": pl.String,
+    "Experiment": pl.String,
+    "Channel": pl.Int64,
+}
+
+
+def is_missing(value):
+    # polars returns nulls as None, which np.isnan does not accept
+    return value is None or (isinstance(value, float) and np.isnan(value))
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -175,7 +189,7 @@ def find_all_relevant_filemaps(
 
 def pick_within_larval_stage(filemap, ls_beg, ls_end, n_picks=1):
     try:
-        if np.isnan(ls_beg) or np.isnan(ls_end):
+        if is_missing(ls_beg) or is_missing(ls_end):
             return []
 
         filemap_of_stage = filemap.filter(
@@ -217,7 +231,7 @@ def get_images_from_filemap(
     print(f"Microscope found: {microscope} in experiment {experiment_name}")
 
     microscope = variation_to_unified_scope_name.get(microscope, microscope)
-    database = pl.DataFrame()
+    rows = []
     for filemap in filemaps_of_points:
         # remove rows where raw is null
         filemap = filemap.filter(pl.col("raw").is_not_null())
@@ -226,7 +240,6 @@ def get_images_from_filemap(
         point = filemap.select(pl.col("Point")).row(0)[0]
         if stage_proportions is None:
             # if no stage proportions are defined
-            rows = []
             images = (
                 filemap.sample(min(n_picks, filemap.height), with_replacement=False)
                 .select(pl.col("raw"))
@@ -246,14 +259,12 @@ def get_images_from_filemap(
                     "Channel": channel,
                 }
                 rows.append(row)
-
-            database = database.vstack(pl.DataFrame(rows))
             continue
         if "larva" in stage_proportions.keys() and "adult" in stage_proportions.keys():
             # handle experiments where only m4 is annotated
             m4 = filemap.select(pl.col("M4")).row(0)[0]
 
-            if m4 is None or np.isnan(m4):
+            if is_missing(m4):
                 continue
 
             times = [0, m4, m4 + extra_adulthood_time]
@@ -271,7 +282,8 @@ def get_images_from_filemap(
                 pl.col(["HatchTime", "M1", "M2", "M3", "M4"])
             ).row(0)
 
-            times = [0, hatch_time, m1, m2, m3, m4, m4 + extra_adulthood_time]
+            adult_end = None if is_missing(m4) else m4 + extra_adulthood_time
+            times = [0, hatch_time, m1, m2, m3, m4, adult_end]
             stages = ["egg", "L1", "L2", "L3", "L4", "adult"]
         else:
             raise ValueError(
@@ -286,25 +298,21 @@ def get_images_from_filemap(
             images = pick_within_larval_stage(
                 filemap, stage_beg, stage_end, n_picks=n_picks
             )
-            rows = []
-            if images:
-                for img in images:
-                    img = img.replace(
-                        "external.data/TowbinLab", "towbin.data/shared"
-                    )  # fixes the path for old experiments
-                    row = {
-                        "Point": point,
-                        "Image": img,
-                        "Stage": stage,
-                        "Microscope": microscope,
-                        "Experiment": experiment_name,
-                        "Channel": channel,
-                    }
-                    rows.append(row)
+            for img in images:
+                img = img.replace(
+                    "external.data/TowbinLab", "towbin.data/shared"
+                )  # fixes the path for old experiments
+                row = {
+                    "Point": point,
+                    "Image": img,
+                    "Stage": stage,
+                    "Microscope": microscope,
+                    "Experiment": experiment_name,
+                    "Channel": channel,
+                }
+                rows.append(row)
 
-            database = database.vstack(pl.DataFrame(rows))
-
-    return database
+    return pl.DataFrame(rows, schema=DATABASE_SCHEMA)
 
 
 def calculate_image_combinations(database_size, scope_proportions, stage_proportions):
@@ -430,7 +438,7 @@ for database_name, database_config in database_configs.items():
         database_name, database_config, len(filemaps), organ_channels
     )
 
-    database = pl.DataFrame()
+    database = pl.DataFrame(schema=DATABASE_SCHEMA)
     for filemap, channel in zip(filemaps, channels):
         database = database.vstack(
             get_images_from_filemap(
