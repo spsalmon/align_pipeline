@@ -4,8 +4,8 @@
 #SBATCH -o ../../sbatch_output/gather_qc-%j.out
 #SBATCH -e ../../sbatch_output/gather_qc-%j.err
 #SBATCH -c 16
-#SBATCH -t 24:00:00
-#SBATCH --mem=32GB
+#SBATCH -t 1:00:00
+#SBATCH --mem=16GB
 
 # Default configuration file
 DEFAULT_CONFIG_FILE="./configs/qc_dataset_config.yaml"
