@@ -1,0 +1,90 @@
+storage_path: "/mnt/towbin.data/shared"
+valid_subdirectories: ["kstojanovski", "aslesarchuk"]
+
+database_path: "/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/datasets/yap_paper"
+
+database_configs: {
+  'body': {
+      'size': 3000,
+      'stage_proportions': {'egg': 0.05, 'L1': 0.2, 'L2': 0.2, 'L3': 0.2, 'L4': 0.2, 'adult': 0.05},
+      'scope_proportions': {'squid': 0.6, 'ti2': 0.4},
+      'strains': null,
+  },
+}
+
+# sets a limit on how far after M4 images will be included
+extra_adulthood_time: 40
+n_picks_per_stage: 40
+
+filemap_paths: [
+    "/mnt/towbin.data/shared/kstojanovski/20240202_Orca_10x_yap-1del_col-10-tir_wBT160-186-310-337-380-393_25C_20240202_171239_051/analysis_sacha/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/kstojanovski/20240212_Orca_10x_yap-1del_col-10-tir_wBT160-186-310-337-380-393_25C_20240212_164059_429/analysis_sacha/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250403_squid_10x_wBT160_186_393_415_yap_del/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250417_squid_10x_wBT186_160_393_415_yap-1_del/analysis/report/analysis_filemap_annotated.parquet",
+    # "/mnt/towbin.data/shared/aslesarchuk/20250424_squid1_10x_wBT160_186_393_415_yap-del-1_del/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250527_squid1_10x_wBT160_186_393_415_yap_del/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250603_squid1_10x_wBT160_186_393_415_yap_del/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250623_squid1_10x_wBT186_528_545_437_438_439_yap_aid_tag_noGFP/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250627_squid1_10x_wBT186_528_545_437_438_439_yap_aid_noGFP/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250703_squid1_10x_wBT186_528_545_437_438_439_yap_aid_noGFP/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250707_squid1_10x_wBT160_186_415_393_528_545_yap_aid_del/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250711_squid1_10x_wBT160_186_415_393_528_545_yap_delta_aid/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250717_squid1_10x_wbT160_186_415_393_528_545_yap_del_aid/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20250721_squid1_10x_wBT160_186_415_393_528_545_yap_del_aid/analysis/report/analysis_filemap_annotated.parquet",
+    "/mnt/towbin.data/shared/aslesarchuk/20260331_squid5_10x_wBT160_186_415_393_272_634_eft3_tir/analysis/report/analysis_filemap_annotated.csv",
+    "/mnt/towbin.data/shared/aslesarchuk/20260407_squid5_10x_160_186_415_393_272_634_eft3_tir/analysis/report/analysis_filemap_annotated.csv",
+    "/mnt/towbin.data/shared/aslesarchuk/20260421_squid5_10x_160_186_415_393_272_634/analysis/report/analysis_filemap_annotated.csv",
+    "/mnt/towbin.data/shared/aslesarchuk/20260507_squid5_10x_wBT160_186_415_393_272_634_eft3tir/analysis/report/analysis_filemap_annotated.csv",
+    "/mnt/towbin.data/shared/aslesarchuk/20260522_squid5_10x_160_186_415_393_272_634_eft3tir/analysis/report/analysis_filemap_annotated.csv",
+    "/mnt/towbin.data/shared/aslesarchuk/20260709_Orca_10x_wBT160_186_415_390_697_698/analysis/report/analysis_filemap_annotated.csv",
+    "/mnt/towbin.data/shared/aslesarchuk/20260723_orca_10x_160_186_415_393_697_698_bus8/analysis/report/analysis_filemap_annotated.csv",
+]
+
+organ_channels: [
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    # {'body': 2, 'pharynx': 1},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+    {'body': 2, 'pharynx': 1},
+    {'body': 2, 'pharynx': 1},
+    {'body': 2, 'pharynx': 1},
+    {'body': 2, 'pharynx': 1},
+    {'body': 2, 'pharynx': 1},
+    {'body': 1, 'pharynx': 0},
+    {'body': 1, 'pharynx': 0},
+]
+
+
+valid_scopes: ["ti2", "squid"]
+scopes_alt_names: {
+  'crest': ['Crest', 'crest', 'CREST'],
+  'squid': ['Squid', 'squid', 'SQUID'],
+  'ti2': ['Ti2', 'ti2', 'TI2', 'orca', 'Orca', 'ORCA'],
+  'ziva': ['ziva', 'ZIVA', 'Ziva']
+}
+
+keywords_to_exclude: ["exclude", "fail", "failure", "crash"]
+keywords_to_include: ["lifespan"]
+
+experiments_to_consider: null
+
+experiments_to_always_include: []
+experiments_to_exclude: [
+  "20241111_squid_10x_wBT318_NaCl",
+  "20241707_souvik_w318_ev_mex3_squid",
+  "20240515_squid1_10x_wbt160_25C_2024-05-15_15-31-45.506118",
+  "20240212_squid_wbt318_Nacl",
+  "20241912_squid_10x_wBT_344_415",
+  "20252401_squid_10x_wBT318_reproduction",
+  "20252001_squid_10x_wBT318_NaCl",
+]
