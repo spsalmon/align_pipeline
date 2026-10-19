@@ -5,10 +5,11 @@
 # dataset_path:
 #   - "/path/to/first_dataset/"
 #   - "/path/to/second_dataset/"
-dataset_path: "/mnt/towbin.data/shared/spsalmon/towbinlab_classification_database/datasets/10x_pharynx_qc/pharynx/"
+dataset_path:
+  - "/mnt/towbin.data/shared/spsalmon/towbinlab_classification_database/datasets/10x_body_qc/body/"
 
 # Directory where the trained model bundle and classifiers are written.
-output_path: "/mnt/towbin.data/shared/spsalmon/towbinlab_classification_database/models_new/10x_pharynx_qc/"
+output_path: "/mnt/towbin.data/shared/spsalmon/towbinlab_classification_database/models/new/10x_body_qc_super_strict_mask_only/"
 
 # Output file names written inside output_path.
 model_name: "qc_xgb_model.pkl"
@@ -16,8 +17,8 @@ qc_classifier_name: "qc_xgb_model.json"
 egg_classifier_name: "egg_xgb_model.json"
 
 optimize_hyperparameters: true
-mask_only: false
-train_egg_detector: false
+mask_only: true
+train_egg_detector: true
 
 pixelsizes: {'squid': 0.864, 'ti2': 0.65}
 

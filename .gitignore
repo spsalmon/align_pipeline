@@ -183,8 +183,10 @@ training/*.yaml
 training/*/configs/*
 !training/segmentation/configs/segmentation_training_config.yaml
 !training/classification/configs/qc_training_config.yaml
+!training/classification/configs/qc_dataset_config.yaml
 !training/molt_detection/configs/molt_training_config.yaml
 !training/molt_detection/configs/molt_dataset_config.yaml
+
 analysis_and_plots/*
 !analysis_and_plots/analysis_development_notebook.ipynb
 analysis_and_plots/plots/*

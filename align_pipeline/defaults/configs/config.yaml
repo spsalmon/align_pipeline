@@ -19,7 +19,6 @@ overwrite_annotated_filemap: False
 
 get_experiment_time: True
 
-# Regexes keep single quotes so the backslashes don't need escaping.
 time_regex: 'Time(\d+)'
 point_regex: 'Point(\d+)'
 
@@ -76,7 +75,7 @@ segmentation_channels: [ [ 1 ], [ 0 ] ]
 
 
 # deep learning segmentation parameters
-model_path: [ "/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/models/paper/body/towbintools_medium/best_light.ckpt", "/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/models/paper/pharynx/towbintools_medium/best_light.ckpt" ]
+model_path: [ "/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/models/align/body/align_medium/best_light.ckpt", "/mnt/towbin.data/shared/spsalmon/towbinlab_segmentation_database/models/align/pharynx/align_medium/best_light.ckpt" ]
 batch_size: [ 4 ]
 
 # Folder references below name a directory produced under the analysis dir; the

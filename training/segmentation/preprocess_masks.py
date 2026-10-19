@@ -94,7 +94,7 @@ def binarize_and_clean_mask(
 ):
     mask = read_tiff_file(mask_file)
     mask = mask > 0
-    mask = remove_small_objects(mask.astype(bool), min_size=10).astype(np.uint8)
+    mask = remove_small_objects(mask.astype(bool), min_size=20).astype(np.uint8)
 
     if keep_only_biggest_object:
         _, mask = get_biggest_connected_component(mask)
