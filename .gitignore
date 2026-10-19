@@ -181,6 +181,8 @@ align_pipeline/defaults/config/*
 !align_pipeline/defaults/config/slurm_config.yaml
 training/*.yaml
 training/*/configs/*
+training/segmentation/gather_dataset/*.yaml
+!training/segmentation/gather_dataset/dataset_config.yaml
 !training/segmentation/configs/segmentation_training_config.yaml
 !training/classification/configs/qc_training_config.yaml
 !training/classification/configs/qc_dataset_config.yaml
