@@ -37,6 +37,15 @@ reused across experiments.
 | --- | --- |
 | `building_blocks` | The ordered list of analysis steps. |
 | `rerun_<block>` | If `False` (the default), already-processed images are skipped. If `True`, everything is recomputed. |
+| `rerun_mode` | If `True`, read the GUI's annotated filemap (`analysis_filemap_annotated`) and leave out the frames that do not need reanalysis: frames flagged `Ignore`, and frames too long after `M4` (see below). The run fails if no annotated filemap exists. Default `False`. |
+| `rerun_max_time_after_m4` | With `rerun_mode`, the number of time points after each individual's `M4` to keep analyzing; later frames are skipped. `null` (the default) means no limit. Individuals without an `M4` annotation are never cut. |
+
+`rerun_mode` only decides *which* frames a block looks at; the `rerun_<block>`
+flags still decide whether existing outputs are recomputed, so set them to `True`
+to redo the analysis of the kept frames. It applies to segmentation,
+straightening, morphology computation, quality control and fluorescence
+quantification. Molt detection and custom blocks always see the whole filemap.
+The skipped frames keep the values they had from earlier runs.
 
 The block names are `segmentation`, `straightening`, `morphology_computation`,
 `quality_control`, `fluorescence_quantification`, `molt_detection` and `custom`.

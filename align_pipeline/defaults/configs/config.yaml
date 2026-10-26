@@ -17,6 +17,12 @@ pixelsize: [ 0.65 ]
 # When an annotated filemap exists, use it instead of the plain one.
 overwrite_annotated_filemap: False
 
+# Rerun mode: take the GUI's annotated filemap (required) and skip the frames
+# flagged Ignore, and those more than rerun_max_time_after_m4 time points after
+# each individual's M4 (null = no limit). Combine with rerun_<block>: [ True ].
+rerun_mode: False
+rerun_max_time_after_m4: null
+
 get_experiment_time: True
 
 time_regex: 'Time(\d+)'

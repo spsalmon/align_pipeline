@@ -86,8 +86,12 @@ def update_experiment_filemap(
                 experiment_filemap, filemap_path, result, merge_cols=["Point"]
             )
         else:
+            # A rerun skipped some rows on purpose; keep their earlier values.
             experiment_filemap = merge_and_save_records(
-                experiment_filemap, filemap_path, result
+                experiment_filemap,
+                filemap_path,
+                result,
+                keep_unmatched=config.get("rerun_mode", False),
             )
     return experiment_filemap
 

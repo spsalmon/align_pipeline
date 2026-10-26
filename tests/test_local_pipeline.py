@@ -1059,3 +1059,138 @@ def test_custom_block_with_no_return_type_runs_and_chains(tmp_path):
     with open(tmp_path / "exp" / "analysis" / "report" / "analysis_filemap.csv") as f:
         header = f.readline()
     assert "sentinel" not in header
+
+
+# ---- Rerun mode ----
+
+
+def test_get_rerun_skip_rows_ignore_and_m4_limit():
+    import polars as pl
+
+    from align_pipeline.utils import get_rerun_skip_rows
+
+    annotated = pl.DataFrame(
+        {
+            "Time": [0, 1, 2, 3, 4, 0, 1, 2, 3, 4],
+            "Point": [0] * 5 + [1] * 5,
+            "Ignore": [False, True, False, False, False] + [False] * 5,
+            # Point 0 has M4 at Time 2; Point 1 is unannotated (NaN, legacy).
+            "M4": [2.0] * 5 + [float("nan")] * 5,
+        }
+    )
+
+    def pairs(df):
+        return sorted(zip(df["Time"].to_list(), df["Point"].to_list()))
+
+    # No limit: only the Ignore frame.
+    assert pairs(get_rerun_skip_rows(annotated)) == [(1, 0)]
+    # Limit 1: Point 0 keeps Time <= 3; the unannotated Point 1 keeps everything.
+    assert pairs(get_rerun_skip_rows(annotated, 1)) == [(1, 0), (4, 0)]
+    # Limit 0 drops everything after M4.
+    assert pairs(get_rerun_skip_rows(annotated, 0)) == [(1, 0), (3, 0), (4, 0)]
+    # Without Ignore / M4 columns nothing is skipped.
+    assert get_rerun_skip_rows(annotated.select("Time", "Point"), 0).is_empty()
+
+
+def test_filter_rerun_rows():
+    import polars as pl
+
+    from align_pipeline.utils import filter_rerun_rows
+
+    filemap = pl.DataFrame({"Time": [0, 1, 2], "Point": [0, 0, 0], "x": [1, 2, 3]})
+    assert filter_rerun_rows(filemap, {}).equals(filemap)
+    skip = pl.DataFrame(
+        {"Time": [1], "Point": [0]}, schema={"Time": pl.Int32, "Point": pl.Int32}
+    )
+    kept = filter_rerun_rows(filemap, {"rerun_skip_rows": skip})
+    assert kept["Time"].to_list() == [0, 2]
+
+
+def test_merge_and_save_records_keep_unmatched(tmp_path):
+    import polars as pl
+
+    from align_pipeline.utils import merge_and_save_records
+
+    filemap = pl.DataFrame({"Time": [0, 1], "Point": [0, 0], "area": [10.0, 20.0]})
+    records = tmp_path / "records.csv"
+    pl.DataFrame({"Time": [0], "Point": [0], "area": [99.0]}).write_csv(records)
+    filemap_path = str(tmp_path / "filemap.csv")
+
+    merged = merge_and_save_records(filemap, filemap_path, str(records))
+    assert merged["area"].to_list() == [99.0, None]
+    merged = merge_and_save_records(
+        filemap, filemap_path, str(records), keep_unmatched=True
+    )
+    assert merged.columns == ["Time", "Point", "area"]
+    assert merged["area"].to_list() == [99.0, 20.0]
+
+
+def test_validate_config_rerun_keys():
+    from align_pipeline.building_blocks import validate_config
+
+    config = _valid_config()
+    config.update({"rerun_mode": True, "rerun_max_time_after_m4": None})
+    validate_config(config)
+    config["rerun_max_time_after_m4"] = 10
+    validate_config(config)
+    for bad in (-1, 1.5, "10", True):
+        config["rerun_max_time_after_m4"] = bad
+        with pytest.raises(ValueError, match="rerun_max_time_after_m4"):
+            validate_config(config)
+    config["rerun_max_time_after_m4"] = None
+    config["rerun_mode"] = "yes"
+    with pytest.raises(ValueError, match="rerun_mode"):
+        validate_config(config)
+
+
+def test_rerun_mode_requires_annotated_filemap(tmp_path):
+    config_path = _build_experiment(tmp_path, extra_config={"rerun_mode": True})
+    result = _run_pipeline(config_path, ["--temp_dir", str(tmp_path / "t")])
+    assert result.returncode != 0
+    assert "no annotated filemap" in result.stdout + result.stderr
+
+
+def test_rerun_mode_skips_ignored_frames(tmp_path):
+    # First run analyzes both frames. The annotation then flags Time 1 as Ignore;
+    # a forced rerun must only reprocess Time 0 and keep Time 1's earlier area.
+    import polars as pl
+
+    config_path = _build_experiment(tmp_path)
+    result = _run_pipeline(config_path, ["--temp_dir", str(tmp_path / "t1")])
+    assert result.returncode == 0, result.stdout + result.stderr
+
+    report_dir = tmp_path / "exp" / "analysis" / "report"
+    base = pl.read_csv(report_dir / "analysis_filemap.csv")
+    area_before = base.filter(pl.col("Time") == 1)["ch1_seg_area"].item()
+    base.with_columns((pl.col("Time") == 1).alias("Ignore")).write_csv(
+        report_dir / "analysis_filemap_annotated.csv"
+    )
+
+    mask_dir = tmp_path / "exp" / "analysis" / "ch1_seg"
+    masks = sorted(mask_dir.glob("*.tiff"))
+    for mask in masks:
+        os.utime(mask, (1_000, 1_000))
+
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+    config.update(
+        {
+            "rerun_mode": True,
+            "rerun_segmentation": [True],
+            "rerun_morphology_computation": [True],
+        }
+    )
+    with open(config_path, "w") as f:
+        yaml.safe_dump(config, f)
+    result = _run_pipeline(config_path, ["--temp_dir", str(tmp_path / "t2")])
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Rerun mode: skipping 1 frame(s)" in result.stdout
+
+    # Only the Time 0 mask was rewritten.
+    assert [os.stat(m).st_mtime != 1_000 for m in masks] == [True, False]
+
+    morph = pl.read_csv(report_dir / "ch1_seg_morphology.csv")
+    assert morph["Time"].to_list() == [0]
+    filemap = pl.read_csv(report_dir / "analysis_filemap.csv").sort("Time")
+    assert filemap["ch1_seg_area"].null_count() == 0
+    assert filemap.filter(pl.col("Time") == 1)["ch1_seg_area"].item() == area_before

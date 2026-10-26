@@ -151,6 +151,8 @@ GLOBAL_CONFIG_KEYS = frozenset(
         "report_format",
         "get_experiment_time",
         "overwrite_annotated_filemap",
+        "rerun_mode",
+        "rerun_max_time_after_m4",
         "time_regex",
         "point_regex",
         "n_jobs",
@@ -440,6 +442,7 @@ class SegmentationBuildingBlock(BuildingBlock):
             [resolve_ref(self.block_config["segmentation_column"], config)],
             subdir,
             rerun=self.block_config["rerun_segmentation"],
+            config=config,
         )
 
         return input_files, output_files
@@ -495,6 +498,7 @@ class StraighteningBuildingBlock(BuildingBlock):
             columns,
             subdir,
             rerun=block_config["rerun_straightening"],
+            config=config,
         )
 
         if len(input_files) != 0:
@@ -545,6 +549,7 @@ class QualityControlBuildingBlock(BuildingBlock):
             experiment_filemap,
             columns,
             subdir,
+            config=config,
         )
 
         if len(input_files) != 0:
@@ -592,6 +597,7 @@ class MorphologyComputationBuildingBlock(BuildingBlock):
             experiment_filemap,
             morphology_computation_masks,
             analysis_subdir,
+            config=config,
         )
 
         input_files = [input_file[0] for input_file in input_files]
@@ -665,7 +671,9 @@ class FluorescenceQuantificationBuildingBlock(BuildingBlock):
             resolve_ref(self.block_config["fluorescence_quantification_masks"], config),
         ]
 
-        input_files, _ = get_input_and_output_files(experiment_filemap, columns, subdir)
+        input_files, _ = get_input_and_output_files(
+            experiment_filemap, columns, subdir, config=config
+        )
 
         if len(input_files) != 0:
             input_files = [
@@ -817,6 +825,19 @@ def validate_config(config):
     backend = config.get("backend", "slurm")
     if backend not in ("slurm", "local"):
         errors.append(f"'backend' must be 'slurm' or 'local', got '{backend}'")
+
+    if not isinstance(config.get("rerun_mode", False), bool):
+        errors.append("'rerun_mode' must be True or False")
+    max_time_after_m4 = config.get("rerun_max_time_after_m4")
+    if max_time_after_m4 is not None and (
+        isinstance(max_time_after_m4, bool)
+        or not isinstance(max_time_after_m4, int)
+        or max_time_after_m4 < 0
+    ):
+        errors.append(
+            "'rerun_max_time_after_m4' must be null or a non-negative integer, "
+            f"got {max_time_after_m4!r}"
+        )
 
     report_format = config.get("report_format", "csv")
     if report_format not in ("csv", "parquet"):

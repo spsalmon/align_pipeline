@@ -313,7 +313,12 @@ def resolve_ref(ref, config):
     return f"{analysis_dir_name}/{os.path.basename(os.path.normpath(ref))}"
 
 
-def get_input_and_output_files(experiment_filemap, columns, output_dir, rerun=True):
+def get_input_and_output_files(
+    experiment_filemap, columns, output_dir, rerun=True, config=None
+):
+    # With a config, rows skipped by rerun mode are left out of the inputs.
+    if config is not None:
+        experiment_filemap = filter_rerun_rows(experiment_filemap, config)
     all_input_files = [
         experiment_filemap.select(pl.col(column)).to_series().to_list()
         for column in columns
@@ -332,6 +337,54 @@ def get_input_and_output_files(experiment_filemap, columns, output_dir, rerun=Tr
     output_files = list(output_files)
 
     return input_files, output_files
+
+
+# ---- Rerun mode ----
+
+
+def get_rerun_skip_rows(annotated_filemap, max_time_after_m4=None):
+    """Return the (Time, Point) rows a rerun should not reanalyze: frames flagged
+    Ignore in the annotated filemap and, when max_time_after_m4 is set, frames
+    more than that many time points after the individual's M4. Individuals
+    without an M4 annotation have no time limit."""
+    missing = [c for c in ("Time", "Point") if c not in annotated_filemap.columns]
+    if missing:
+        raise ValueError(
+            f"rerun_mode needs Time and Point columns in the annotated filemap, missing: {missing}"
+        )
+
+    skip = pl.lit(False)
+    if "Ignore" in annotated_filemap.columns:
+        skip = skip | pl.col("Ignore").cast(pl.Boolean, strict=False).fill_null(False)
+    else:
+        print("Warning: no Ignore column in the annotated filemap, no frame is ignored")
+
+    if max_time_after_m4 is not None:
+        if "M4" in annotated_filemap.columns:
+            # M4 is a time index; unannotated individuals hold null (or legacy NaN).
+            m4 = pl.col("M4").cast(pl.Float64, strict=False).fill_nan(None)
+            skip = skip | (pl.col("Time") > m4 + max_time_after_m4).fill_null(False)
+        else:
+            print(
+                "Warning: no M4 column in the annotated filemap, no time limit applied"
+            )
+
+    return annotated_filemap.filter(skip).select("Time", "Point").unique()
+
+
+def filter_rerun_rows(experiment_filemap, config):
+    """Drop the rows rerun mode skips (config["rerun_skip_rows"]) from the
+    filemap. A no-op outside rerun mode."""
+    skip_rows = config.get("rerun_skip_rows")
+    if skip_rows is None or skip_rows.is_empty():
+        return experiment_filemap
+    skip_rows = skip_rows.cast(
+        {
+            "Time": experiment_filemap.schema["Time"],
+            "Point": experiment_filemap.schema["Point"],
+        }
+    )
+    return experiment_filemap.join(skip_rows, on=["Time", "Point"], how="anti")
 
 
 def get_experiment_time_from_filemap(experiment_filemap, config, recompute=False):
@@ -891,18 +944,41 @@ def rename_merge_and_save_records(
 
 
 def merge_and_save_records(
-    experiment_filemap, filemap_path, records_file, merge_cols=["Time", "Point"]
+    experiment_filemap,
+    filemap_path,
+    records_file,
+    merge_cols=["Time", "Point"],
+    keep_unmatched=False,
 ):
+    # keep_unmatched: rows absent from the records keep their previous values
+    # instead of being nulled (a rerun that skipped some rows on purpose).
     dataframe = read_filemap(records_file)
 
     new_columns = [column for column in dataframe.columns if column not in merge_cols]
+    overlapping = [col for col in new_columns if col in experiment_filemap.columns]
 
-    # Drop any overlapping columns from experiment_filemap
-    columns_to_drop = [col for col in new_columns if col in experiment_filemap.columns]
-    if columns_to_drop:
-        experiment_filemap = experiment_filemap.drop(columns_to_drop)
-
-    experiment_filemap = experiment_filemap.join(dataframe, on=merge_cols, how="left")
+    if keep_unmatched and overlapping:
+        matched = "__in_records__"
+        experiment_filemap = experiment_filemap.join(
+            dataframe.with_columns(pl.lit(True).alias(matched)),
+            on=merge_cols,
+            how="left",
+            suffix="__new__",
+        )
+        experiment_filemap = experiment_filemap.with_columns(
+            pl.when(pl.col(matched).fill_null(False))
+            .then(pl.col(f"{col}__new__"))
+            .otherwise(pl.col(col))
+            .alias(col)
+            for col in overlapping
+        ).drop([f"{col}__new__" for col in overlapping] + [matched])
+    else:
+        # Drop any overlapping columns from experiment_filemap
+        if overlapping:
+            experiment_filemap = experiment_filemap.drop(overlapping)
+        experiment_filemap = experiment_filemap.join(
+            dataframe, on=merge_cols, how="left"
+        )
     write_filemap(experiment_filemap, filemap_path)
 
     return experiment_filemap

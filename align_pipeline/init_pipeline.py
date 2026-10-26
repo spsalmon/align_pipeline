@@ -25,6 +25,7 @@ from align_pipeline.utils import (
     get_and_create_folders,
     get_experiment_subdirs,
     get_experiment_time_from_filemap,
+    get_rerun_skip_rows,
     merge_slurm_config,
     pickle_objects,
     save_version_control_info,
@@ -202,6 +203,28 @@ def build_or_load_filemap(config):
     return experiment_filemap, filemap_path
 
 
+def load_rerun_skip_rows(config):
+    """In rerun mode, read the frames to skip (Ignore, or too long after M4) from
+    the GUI's annotated filemap. Raises if there is no annotated filemap."""
+    report_subdir = config["report_subdir"]
+    annotated_filemap_path = find_existing_filemap(
+        report_subdir, "analysis_filemap_annotated"
+    )
+    if annotated_filemap_path is None:
+        raise FileNotFoundError(
+            f"rerun_mode is set but no annotated filemap "
+            f"(analysis_filemap_annotated.{{{','.join(SUPPORTED_FILEMAP_FORMATS)}}}) "
+            f"was found in {report_subdir}"
+        )
+    skip_rows = get_rerun_skip_rows(
+        read_filemap(annotated_filemap_path), config.get("rerun_max_time_after_m4")
+    )
+    print(
+        f"### Rerun mode: skipping {len(skip_rows)} frame(s) based on {annotated_filemap_path} ###"
+    )
+    return skip_rows
+
+
 def build_blocks_for_subdir(global_config, temp_dir_basename, temp_dir, subdir=None):
     print(f"### Initializing the pipeline for subdir {subdir} ###")
 
@@ -248,6 +271,9 @@ def build_blocks_for_subdir(global_config, temp_dir_basename, temp_dir, subdir=N
         if not already_existed and os.path.exists(base_filemap_path):
             os.remove(base_filemap_path)
         raise
+
+    if config.get("rerun_mode", False):
+        config["rerun_skip_rows"] = load_rerun_skip_rows(config)
 
     print("Building the config of the building blocks ...")
 
