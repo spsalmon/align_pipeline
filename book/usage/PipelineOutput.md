@@ -13,7 +13,7 @@ my_experiment/
         ├── analysis_filemap.parquet
         ├── ch2_seg_str_morphology.parquet
         └── pipeline_backup/      <- what was run, and how
-            └── pipeline_1234567/
+            └── pipeline_20261026-105500_1234567/
 ```
 
 ## Images

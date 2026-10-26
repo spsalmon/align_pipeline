@@ -20,11 +20,11 @@ before SLURM answers with its job id, so the id always has a name attached to it
 
 ## Where the logs are
 
-Each run gets its own directory, named after the SLURM job id (or after the start
-time when running locally):
+Each run gets its own directory, named after its start time followed by the SLURM
+job id (just the start time when running locally):
 
 ```
-temp_files/pipeline_1234567/
+temp_files/pipeline_20261026-105500_1234567/
 ├── pipeline-1234567.out     <- everything, in order  ← start here
 ├── pipeline-1234567.err
 ├── sbatch_output/           <- one log per job

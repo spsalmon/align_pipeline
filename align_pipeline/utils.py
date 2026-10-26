@@ -216,14 +216,14 @@ def setup_run_dir(temp_dir, backend="slurm"):
     # without slurm), create its folder structure and, on slurm, move the
     # launcher's logs in. Returns the run directory. The job id comes from
     # _init_pipeline.sh, not SLURM_JOB_ID, which is also set in any interactive
-    # allocation and would make every run there share one directory.
+    # allocation and would make every run there share one directory. The start
+    # time leads the name so runs sort chronologically; the job id, when there
+    # is one, is appended last (concatenate_sbatch_logs reads it back from there).
     job_id = os.environ.get("ALIGN_INIT_JOB_ID")
-    if not job_id:
-        run_dir = os.path.join(
-            temp_dir, datetime.now().strftime("pipeline_%Y%m%d-%H%M%S")
-        )
-    else:
-        run_dir = os.path.join(temp_dir, f"pipeline_{job_id}")
+    run_name = datetime.now().strftime("pipeline_%Y%m%d-%H%M%S")
+    if job_id:
+        run_name += f"_{job_id}"
+    run_dir = os.path.join(temp_dir, run_name)
 
     # batch/ and sbatch_output/ only hold generated job scripts and their slurm
     # logs, so they are pointless for a local run.
@@ -740,7 +740,8 @@ def concatenate_sbatch_logs(temp_dir, closing=""):
     log_dir = os.path.join(temp_dir, "sbatch_output")
     if not os.path.isdir(log_dir):
         return
-    job_id = os.path.basename(os.path.normpath(temp_dir)).removeprefix("pipeline_")
+    # The job id is the last part of the run dir name (see setup_run_dir).
+    job_id = os.path.basename(os.path.normpath(temp_dir)).rsplit("_", 1)[-1]
     try:
         for suffix in (".out", ".err"):
             parts = sorted(

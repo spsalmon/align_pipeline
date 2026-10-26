@@ -744,7 +744,7 @@ def test_concatenate_sbatch_logs(tmp_path):
 
     from align_pipeline.utils import concatenate_sbatch_logs
 
-    temp_dir = tmp_path / "pipeline_4242"
+    temp_dir = tmp_path / "pipeline_20260101-120000_4242"
     log_dir = temp_dir / "sbatch_output"
     log_dir.mkdir(parents=True)
 
@@ -781,6 +781,28 @@ def test_concatenate_sbatch_logs(tmp_path):
         str(temp_dir), "PIPELINE FINISHED -- all 3 blocks completed"
     )
     assert (temp_dir / "pipeline-4242.out").read_text() == combined
+
+
+def test_setup_run_dir_names_runs_by_start_time_and_job_id(tmp_path, monkeypatch):
+    # Slurm runs are named start time then job id, local runs start time only,
+    # and concatenate_sbatch_logs reads the job id back from the name.
+    import re
+
+    from align_pipeline.utils import concatenate_sbatch_logs, setup_run_dir
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: None)  # no scontrol
+
+    monkeypatch.setenv("ALIGN_INIT_JOB_ID", "4242")
+    run_dir = setup_run_dir(str(tmp_path / "temp_files"))
+    assert re.fullmatch(r"pipeline_\d{8}-\d{6}_4242", os.path.basename(run_dir))
+    (tmp_path / run_dir / "sbatch_output" / "init-1.out").write_text("hello\n")
+    concatenate_sbatch_logs(run_dir)
+    assert (tmp_path / run_dir / "pipeline-4242.out").exists()
+
+    monkeypatch.delenv("ALIGN_INIT_JOB_ID")
+    run_dir = setup_run_dir(str(tmp_path / "local"), backend="local")
+    assert re.fullmatch(r"pipeline_\d{8}-\d{6}", os.path.basename(run_dir))
 
 
 def test_concatenate_sbatch_logs_without_logs(tmp_path):
